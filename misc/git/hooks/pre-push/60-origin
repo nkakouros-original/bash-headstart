@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+old_dir="$PWD"
+
+if [[ "$(($(date +%s) % 5))" -ne 0 ]]; then
+  exit
+fi
+
+while IFS=$',' read -r path && read -r url && { read -r separator || :; } do
+  path="${path#*path = }"
+  url="${url#*url = }"
+
+  # TODO remove this
+  if [[ "$url" =~ bats ]]; then
+    continue
+  fi
+
+  cd "$old_dir/$path" || exit 1
+
+  if [[ "$url" =~ ^git ]]; then
+    echo -e "\033[0;33mPushing to origin: $url\033[0m"
+    git push "origin" --all
+  fi
+done <<< "$(grep -A1 path .gitmodules)"
+
+cd "$old_dir" || exit 1

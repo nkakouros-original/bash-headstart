@@ -1,0 +1,565 @@
+#!/usr/bin/env bash
+
+# TODO settle on a single array return method, probably best to accept array
+# names to operate on as params, plus the name of the return global array.
+## @file
+## @author      Nikolaos Kakouros
+## @brief       Functions to cover Bash's missing functionality
+## @copyright   GPLv3
+##
+## Functions in this file are named using the following convention:
+##
+##     bash_<type>_<operation>()
+##
+## where:
+##
+##   * `<type>` is the primitive type, etc that is involved
+##   * `<operation>` is the action performed, eg `join`
+##
+## \note
+## Function parameters in this file are not processed using Bash Infinity to
+## allow potentially contributing this file back to upstream projects.
+
+
+## @fn bash_associative_array_join()
+## @brief Joins two associative arrays into one
+## @param array_one_1 ***string*** The name of the first associative array
+## @param array_two_2 ***string*** The name of the second associative array
+## @param name ***string*** The name of the resulting combined associative
+## array (__default__: 'array')
+## @return ***global hash*** The resulting combined associative array
+## @return ***exit code*** 0 on success
+## @return ***exit code*** [_HEADSTART_EC_ARGERR](headstart__sysexits.html) if non
+## associative arrays or non-existent variables supplied
+##
+## - The two associative arrays to operate on must already be defined, though
+## they can be empty.
+## - The two associative arrays should not be named `array_one_1` or
+## `array_two_2`.
+## - The resulting associative array will be named simply 'array' if no name is
+## defined. This will overwrite any previously defined variable named `array`.
+## - The resulting array will be available as a global array, as there is no
+## easy way to return associative arrays from a function in Bash.
+## - The implementation was inspired from stackoverflow.com/questions/29804909.
+function bash_associative_array_join() {
+  local array_one_1="${1-}"
+  local array_two_2="${2-}"
+  local name="${3-array}"
+
+  # Check arrays are defined
+  if ! declare -p "$array_one_1" "$array_two_2" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check if arrays are indeed associative ones
+  if ! [[ "$(declare -p "$array_one_1")" =~ -A && "$(declare -p "$array_two_2")" =~ -A ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Associative arrays might be defined but not set to empty. We set them to
+  # empty here as we need the parentheses to be present later.
+  if [[ ! "$(declare -p $array_one_1)" =~ .*\(.*\) ]]; then
+    eval "$array_one_1=()"
+  fi
+
+  if [[ ! "$(declare -p $array_two_2)" =~ .*\(.*\) ]]; then
+    eval "$array_two_2=()"
+  fi
+
+  # Convert associative arrays to strings
+  a1="$(declare -p $array_one_1)"
+  a2="$(declare -p $array_two_2)"
+
+  # Combine the two strings trimming where necessary
+  array_both_string="${a1%)} ${a2#*\(}"
+
+  # Create new associative array from string
+  eval "declare -Ag $name="${array_both_string#*=}
+}
+
+
+# TODO add tests for separator
+## @fn bash_array_concatenate()
+## @brief Converts an array to a comma-separated string
+## @params array ***string*** The name of the array to concatenate
+## @return ***echoed string*** The items of the array comma separated
+## @return ***exit code*** 0 on success
+## @return ***exit code*** [_HEADSTART_EC_ARGERR](headstart__sysexits.html) if non
+## array or non-existent variable is supplied
+##
+## - The array to concatenate should not be named `array_one_1`.
+function bash_array_concatenate() {
+  local array_one_1="${1-}"
+  local separator="${2-,}"
+
+  # Check array is defined
+  if ! declare -p "$array_one_1" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check if array is indeed an array
+  if [[ ! "$(declare -p "$array_one_1")" =~ -a ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  array_one_1="$array_one_1[@]"
+  # <<-CODE-NOTE: The `[*]` is added in order for the indirect reference a few
+  #               lines below to work together with the array expansion.
+
+  printf "$(bash_string_join "$separator" "${!array_one_1}")"
+}
+
+
+## @fn bash_array_map()
+## @brief Runs a function on each element of an array and returns the result
+## @params function ***string*** The name of the function to apply to array
+## elements
+## @params array ***string*** The name of the array to operate on
+## @params ...rest Any extra arguments that should be passed to the function
+## @return ***global array*** The array with its elements altered per
+## `function`
+## @return ***exit code*** 0 on success
+## @return ***exit code*** [_HEADSTART_EC_ARGERR](headstart__sysexits.html) if non
+## array or non-existent variable is supplied or if `function` is not defined
+##
+## - The function to be mapped will receive array elements as its first
+##   argument, ie `"$function" "$current_array_element" "${...rest[@]}"`.
+## - The array should not be named `array_one_1`.
+## - The resulting array will be available as a global array, as there is no
+##   easy way to return associative arrays from a function in Bash.
+## - The original array will be overwritten from the result of this function.
+##   Also, as mentioned, the scope will be global which might be different to
+##   the original.
+function bash_array_map() {
+  local function="${1-}"
+  local array_one_1="${2-}"
+  shift 2
+
+  # Check if function is defined
+  if ! declare -F "$function" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check array is defined
+  if ! declare -p "$array_one_1" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check if array is indeed an array
+  if [[ ! "$(declare -p "$array_one_1")" =~ -a ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # shellcheck disable=SC1087
+  array_one_1="$array_one_1[@]"
+  # <<-CODE-NOTE: The `[*]` is added in order for the indirect reference a few
+  #               lines below to work together with the array expansion.
+
+  local -a new_array
+  local -i index=0
+  local item
+
+  for item in "${!array_one_1-}"; do
+    new_array[$index]="$("$function" "$item" "$@")"
+    index+=1
+  done
+  # <<-CODE-NOTE: `${!array_one_1}` will fail if `array_one_1` is defined but
+  #               empty with an unbound variable error. Thus, we set the empty
+  #               string as the default (${!array_one_1-}).
+
+  array_one_1="${array_one_1%\[@\]}"
+  declare -ag $array_one_1
+  eval "$array_one_1=("${new_array[@]}")"
+}
+
+
+## @fn bash_array_keep_unique()
+## @brief Keeps only unique items in an array
+## @param array_one_1 ***string*** The array to operate on
+## @return ***global array*** The original array with duplicate elements
+## removed
+## @return ***exit code*** 0 on success
+## @return ***exit code*** [_HEADSTART_EC_ARGERR](headstart__sysexits.html) if non
+## array or non-existent variable is supplied
+##
+## - The array should not be named `array_one_1`.
+## - The resulting array will be available as a global array, as there is no
+##   easy way to return associative arrays from a function in Bash.
+## - The original array will be overwritten from the result of this function.
+##   Also, as mentioned, the scope will be global which might be different to
+##   the original.
+## - The index of the array items will be different in the returned array. For
+##   instance, if the original array was ([0]=one [1]=one [2]=two), the
+##   returned array will be ([0]=one [1]=two) instead of ([0]=one [2]=two).
+function bash_array_keep_unique() {
+  array_one_1="${1-}"
+
+  # Check array is defined
+  if ! declare -p "$array_one_1" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check if array is indeed an array
+  if [[ ! "$(declare -p "$array_one_1")" =~ -a ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # shellcheck disable=SC1087
+  array_one_1="$array_one_1[@]"
+  # <<-CODE-NOTE: The `[@]` is added in order for the indirect reference a few
+  #               lines below to work together with the array expansion.
+
+  local -a tmp
+  local item
+
+  for item in "${!array_one_1-}"; do
+    # <<-CODE-NOTE: `${!array_one_1}` will fail if `array_one_1` is defined but
+    #               empty with an unbound variable error. Thus, we set the empty
+    #               string as the default (${!array_one_1-}).
+    if [[ " ${tmp[*]} " != *" $item "* ]]; then
+      tmp+=("$item")
+    fi
+  done
+
+  array_one_1="${array_one_1%\[*\]}"
+  declare -ag "$array_one_1"
+  eval "$array_one_1=("${tmp[@]}")"
+}
+
+## TODO add tests, especially for backslash
+## @fn bash_string_escape_regex()
+## @brief Escapes characters that have a special meaning in regular expressions
+## @param string ***string*** The string to escape
+## @param characters ***string*** The characters to escape (__default__:
+## '[]().\\')
+## @return ***echoed string*** The original string with special characters
+## escaped
+## @return ***exit code*** 0 on success
+## @return ***exit code*** !=0 otherwise
+bash_string_escape_regex() {
+  string="${1-}"
+  characters="${2-\\{\}[]().}"
+  # <<-CODE-NOTE '\' has to be first due to the conditional below. Otherwise,
+  #              escaped sequences like `\[` would become `\\[`
+
+  local i
+  local char
+  for ((i=0; i<${#characters}; i++)); do
+    char="${characters:$i:1}"
+    if [[ "$char" == '\' ]]; then
+      string="${string//\\/\\\\}"
+      # <<-CODE-NOTE: I dealing '\' differently to other characters as it seems
+      #               not work if '\' is in a variable.
+    else
+      string="${string//$char/\\$char}"
+    fi
+  done
+
+  echo "$string"
+}
+
+
+## TODO add tests
+## @fn bash_array_to_string
+## @brief Converts an array to a delimiter-separated string
+## @param array ***string*** The name of the array to convert to string
+## @param delimiter ***string*** The characters that will separate the array
+## elements in the string
+## @return ***string*** A string with the array elements separated by delimiter
+function bash_array_to_string() {
+  array="${1-}"
+  delimiter="${2:-, }"
+
+  # Check array is defined
+  if ! declare -p "$array" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check if array is indeed an array
+  if [[ ! "$(declare -p "$array")" =~ -a ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # shellcheck disable=SC1087
+  array="$array[*]"
+  # <<-CODE-NOTE: The `[*]` is added in order for the indirect reference a few
+  #               lines below to work together with the array expansion.
+
+  array="${!array}"
+  echo "${array// /$delimiter}"
+}
+
+
+## TODO add tests
+## @fn bash_trim
+## @brief Trims whitespace from the beginning and ending of strings
+## @param string ***string*** The string to trim
+## @return ***string*** The trimmed string
+function bash_trim() {
+  local string="${1-}"
+
+  string="${string#[[:space:]]}"
+  string="${string%[[:space:]]}"
+
+  echo "$string"
+}
+
+
+## TODO add tests
+## @fn bash_array_sort
+## @brief Sort an array using the quick sort algorithm
+## Taken from stackoverflow.com/questions/7442417/30576368#30576368#answer-30576368
+function bash_array_sort() {
+  local array_one_1="${1-}"
+  shift
+
+  local compare_function="${2:-bash_compare_strings}"
+
+  # Check if function is defined
+  if ! declare -F "$compare_function" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check array is defined
+  if ! declare -p "$array_one_1" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check if array is indeed an array
+  if [[ ! "$(declare -p "$array_one_1")" =~ -a ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # shellcheck disable=SC1087
+  array_one_1="$array_one_1[@]"
+  # <<-CODE-NOTE: The `[*]` is added in order for the indirect reference a few
+  #               lines below to work together with the array expansion.
+
+  local stack
+  eval "stack=( 0 \$(( \${#$array_one_1} -1 )) )"
+  local beg
+  local end
+  local i
+  local pivot
+  local smaller
+  local larger
+
+  local qsort_ret
+  qsort_ret=("${!array_one_1-}")
+
+  while ((${#stack[@]})); do
+     beg="${stack[0]}"
+     end="${stack[1]}"
+     stack=( "${stack[@]:2}" )
+     smaller=()
+     larger=()
+     pivot="${qsort_ret[beg]}"
+
+     for (( i=beg+1; i<=end; ++i )); do
+        if "$compare_function" "${qsort_ret[i]}" "$pivot"; then
+           smaller+=( "${qsort_ret[i]}" )
+        else
+           larger+=( "${qsort_ret[i]}" )
+        fi
+     done
+     qsort_ret=( "${qsort_ret[@]:0:beg}" "${smaller[@]}" "$pivot" "${larger[@]}" "${qsort_ret[@]:end+1}" )
+     if ((${#smaller[@]}>=2)); then stack+=( "$beg" "$((beg+${#smaller[@]}-1))" ); fi
+     if ((${#larger[@]}>=2)); then stack+=( "$((end-${#larger[@]}+1))" "$end" ); fi
+  done
+
+  array_one_1="${array_one_1%\[@\]}"
+  declare -ag "$array_one_1"
+  eval "${array_one_1}=( "${qsort_ret[@]}" )"
+}
+
+
+function bash_compare_strings() {
+  [[ "${1-}" < "${2-}" ]]
+}
+
+
+## fn bash_compare_versions()
+## @brief compares two (semantic) versions strings
+## TODO add tests
+## Taken from https://stackoverflow.com/questions/4023830/
+function bash_compare_versions() {
+  if [[ "$1" == "$2" ]]; then
+    return 2
+  fi
+
+  local IFS=.
+  local i
+  local -a ver1=($1)
+  local -a ver2=($2)
+
+  # fill empty fields in ver1 with zeros
+  for ((i=${#ver1[@]}; i<${#ver2[@]}; i++)); do
+    ver1[i]=0
+  done
+
+  for ((i=0; i<${#ver1[@]}; i++)); do
+    if [[ -z "${ver2[i]}" ]]; then
+      # fill empty fields in ver2 with zeros
+      ver2[i]=0
+    fi
+    if ((10#${ver1[i]} > 10#${ver2[i]})); then
+      return 1
+    fi
+    if ((10#${ver1[i]} < 10#${ver2[i]})); then
+      return 0
+    fi
+  done
+
+  return 2
+}
+
+## TODO add tests
+## @fn bash_array_asymmetric_diff()
+## @brief Returns the results of Array1 - Array2
+## @param __array1 ***string*** the array to subtract from
+## @param __array2 ***string*** the array to subtract
+## @param __return_array ***strin*** the name of the global array to return
+## @return ***global array*** *__return_array* containing *__array1* without
+## the elements of *__array2*
+function bash_array_asymmetric_diff()  {
+  local __array1="${1-}"
+  local __array2="${2-}"
+  local __return_array="${3-asymmetric_diff}"
+
+  # Check arrays are defined
+  if ! declare -p "$__array1" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+  if ! declare -p "$__array2" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check if arrays are indeed arrays
+  if [[ ! "$(declare -p "$__array1")" =~ -a ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+  if [[ ! "$(declare -p "$__array2")" =~ -a ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  local element
+  local -a __tmp_array=()
+  for element in $(eval "echo \"\${$__array1[*]}\""); do
+    __tmp_array+=( "$element" )
+  done
+
+  eval "declare -ag ${__return_array}=()"
+  for element in "${__tmp_array[@]}"; do
+    eval "${__return_array}+=(\"$element\")"
+  done
+
+  # Check if arrays are empty
+  if [[ "$(declare -p "$__array1")" =~ $__array1$|\(\)$ ||
+        "$(declare -p "$__array2")" =~ $__array2$|\(\)$ ]]; then
+    return
+  fi
+
+  # shellcheck disable=SC1087
+  __array2="$__array2[*]"
+
+  local -i i=0
+  for element in "${__tmp_array[@]}"; do
+    if [[ " ${!__array2} " == *" $element "* ]]; then
+      unset "$__return_array[i]"
+    fi
+    i+=1
+  done
+}
+
+
+## @fn bash_array_intersect()
+## @brief Returns the common elements between two arrays
+## @param __array1 ***string*** the first array
+## @param __array2 ***string*** the second array
+## @param name ***string*** The name of the resulting array (__default__:
+## 'result')
+## @return ***global array*** the intersection between the two arrays
+function bash_array_intersect() {
+  local __array1="${1-}"
+  local __array2="${2-}"
+  local name="${3-result}"
+  shift 3
+
+  # Check arrays are defined
+  if ! declare -p "$__array1" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+  if ! declare -p "$__array2" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check if arrays are indeed arrays
+  if [[ ! "$(declare -p "$__array1")" =~ -a ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+  if [[ ! "$(declare -p "$__array2")" =~ -a ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # Check if arrays are empty
+  if [[ "$(declare -p "$__array1")" =~ $__array1$|\(\)$ ||
+        "$(declare -p "$__array2")" =~ $__array2$|\(\)$ ]]; then
+    declare -ag "$name"
+    return
+  fi
+
+  # shellcheck disable=SC1087
+  __array1="$__array1[@]"
+  # shellcheck disable=SC1087
+  __array2="$__array2[*]"
+  # <<-CODE-NOTE: The `[*]` is added in order for the indirect reference a few
+  #               lines below to work together with the array expansion.
+
+
+  declare -a __tmp_array=()
+  local -i i=0
+  for element in "${!__array1}"; do
+    if [[ " ${!__array2} " == *" $element "* ]]; then
+      __tmp_array+=("$element")
+    fi
+    i+=1
+  done
+
+  local __tmp_declaration
+  __tmp_declaration="$(declare -p __tmp_array)"
+
+  eval "declare -ag $name"=${__tmp_declaration#*=}
+}
+
+
+# TODO add tests
+## @fn bash_string_join()
+## @brief Joins strings separated by a separator
+## @param separator ***string*** the separator between the strigns
+## @param ...rest the strings to join
+## @return ***echoed string*** the joined strings
+function bash_string_join() {
+  local separator="${1-}"
+  shift
+
+  if [[ "$separator" == '' ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  if [[ "$#" -eq 0 ]]; then
+    return
+  fi
+
+  if [[ "$#" -eq 1 ]]; then
+    echo "$1"
+    return
+  fi
+
+  local IFS=$'\ca'
+
+  local output
+  output="$*"
+  output="${output//$'\ca'/$separator}"
+
+  printf "$output"
+}

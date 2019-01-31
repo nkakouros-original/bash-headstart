@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+
+old_dir="$PWD"
+
+if [[ "$(($(date +%s) % 5))" -ne 0 ]]; then
+  exit
+fi
+
+gitmodules_file="$old_dir/.gitmodules"
+while IFS=, read module mirror; do
+  # Find the folder in the project where the module lies in.
+  folder="$(grep -A 4 -m 1 "$module" "$gitmodules_file" | grep path)"
+  folder="${folder#*path = }"
+
+  cd "$old_dir/$folder" || exit 1
+
+  echo -e "\033[0;33m$module: pushing to kth mirror: $mirror\033[0m"
+
+  git push --no-verify -f "kth" --all
+  # <<-CODE-NOTE --no-verify is used to avoid calling hooks again which would
+  #              result in an endless loop.
+  #              -f is used to not fail when -f is used in the command line.
+
+done <<< "$(grep -v '^#' ".gitmirrors" | grep -v '^$')"
+
+cd "$old_dir" || exit 1

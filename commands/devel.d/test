@@ -1,0 +1,71 @@
+#! /bin/bash
+#
+# Run automated tests
+#
+# Usage:
+#   {{go}} {{cmd}} [--coverage|--edit|--list] [<glob>...]
+#
+# Options:
+#   --coverage  Collect test coverage data using kcov (Linux only)
+#   --edit      Open matching test files using `{{go}} edit`
+#   --list      List test suite names without executing them
+#
+# Without <glob> arguments, runs (or edits, or lists) all tests. With one or
+# more <glob> arguments, only runs tests matching 'tests/<glob>.bats'.
+#
+# If a <glob> doesn't match any test files, the command will return an error
+# without running any tests. See `{{go}} help glob` for details.
+#
+# NOTE: If the <glob> produces errors, or generally doesn't do as you expect,
+# you may need to include it in quotes so it isn't expanded by the shell
+# _before_ executing the {{cmd}} command.
+#
+# Taken from custom/vendor/go-script-bash/scripts/test
+
+# Passes all arguments through to `@go.bats_main` from
+# `scripts/vendor/go-script-bash/lib/bats-main`.
+_test_main() {
+  declare -x TMPDIR="$HEADSTART_TMP_DIR"
+  # <<-CODE_NOTE: This environment variable is read by Bats in order to set its
+  #               own temp folder (BATS_TMPDIR variable). The BATS_TMPDIR
+  #               variable is used then to set the variables
+  #               BATS_TEST_ROOTDIR=TEST_GO_ROOTDIR='BATS_TMPDIR/test rootdir'
+  #               which are used throughout go-script's test libraries. In the
+  #               end, both Bats and go-script-bash's test operation use this
+  #               as their temp folder.
+
+  declare -x HEADSTART_TEST_FIXTURES="$HEADSTART_TEST_DIR/unit/fixtures"
+
+  # drive the @go.bats_main script
+  declare -x _GO_COVERALLS_URL=''
+  declare -x _GO_BATS_DIR="$HEADSTART_VENDOR_DIR/bats"
+  declare -x _GO_BATS_GLOB_ARGS=("scripts/tests/unit" '.bats')
+  # <<-CODE_NOTE: The first argument is the path to search into, the second is
+  #               the file extension to look for. The path has to not include
+  #               spaces due to a bug in go-script-bash, in lib/bats-main. So,
+  #               we declare it as relative here, knowing that it will not
+  #               contain spaces this way.
+  #
+  declare -x _GO_KCOV_DIR="$HEADSTART_TMP_DIR/kcov"
+  declare -x _GO_BATS_COVERAGE_DIR="$HEADSTART_TMP_DIR/coverage"
+  declare -x _GO_COLLECT_BATS_COVERAGE=''
+  # TODO see if these paths actually work
+  declare -x _GO_BATS_COVERAGE_INCLUDE=('headstart' 'commands' 'lib')
+
+  . "$_GO_USE_MODULES" 'bats-main'
+  # Tab completions
+
+  trap '' ERR
+  # TODO add note about lib/system not being enough
+  # <<-CODE-NOTE: The error trap should be set to Bash Infinity's exception
+  #               handler that print the stack trace on unexpected error. The
+  #               next line will call Bats. If a test fails, then Bats will
+  #               exit with code 1. This will trigger the stack trace, which is
+  #               sth we do not want as the "error" is not sth we should be
+  #               worried about, it is not actually an error, just a status
+  #               code. We unset therefore the ERR trap here before calling
+  #               Bats.
+  @go.bats_main "$@"
+}
+
+_test_main "$@"

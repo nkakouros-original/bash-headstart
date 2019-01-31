@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#
+# Commands relevant to the local installation of the tool
+
+
+. "$_GO_USE_MODULES" 'subcommands'
+
+@go.show_subcommands
+

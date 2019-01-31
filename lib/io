@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+
+## @file
+## @author        Nikolaos Kakouros
+## @brief         Simple functions to read and write to the console
+## @copyright     GPLv3
+##
+## Functions in this file do not follow a specific naming convention as they
+## will either be used only once in the early stages of {{ go }} script
+## execution or need to be short as they are frequently and universally used.
+
+
+## @var PS4
+## @brief Sets the prefix of the trace output when `set -x` is used (see
+## set_trace())
+declare -gx PS4="\$(exit_code=\$?; if [ \$exit_code -ne 0 ]; then echo -n \"$UI_Color_Red\"; fi; echo -n +\$exit_code;)${UI_Color_Default}(${UI_Color_Cyan}\${BASH_SOURCE#\$PROJECT_DIR/}:${UI_Color_Yellow}\${LINENO}${UI_Color_Default}):${UI_Color_Blue}\${FUNCNAME[0]:+\${FUNCNAME[0]}(): }${UI_Color_Bold}${UI_Color_Italics}${UI_Color_White}"
+
+
+## @fn set_trace()
+## @brief Turns on bash debugging if requested on the cli
+## @params debug ***boolean*** Enable debugging if true (__default__: false)
+##
+## - This is separate from set_debug_levels() to allow setting script debug
+##   output separately from ansible or other debug output to avoid polluting
+##   the output.
+function set_trace() {
+  [boolean] debug=false
+
+  if [[ "$debug" == true ]]; then
+    set -o xtrace  # set -x
+  fi
+}
+
+
+## @fn set_debug_levels()
+## @brief Sets verbosity levels for ansible and other commands
+## @param verbosity ***string*** A series of v's (__default__: '')
+## @return ***global hash*** DEBUG_LEVELS
+##
+## - The `DEBUG_LEVELS` hash contains the following keys:
+##   - `ansible_verbose`: sets Ansible's verbosity level
+##   - `ansible_debug`: sets [Ansible's debug output](https://docs.ansible.com/ansible/2.4/config.html#default-debug)
+## - Ansible supports the following verbosity levels:
+##   - `   v`: shows where ansible reads its configuration from
+##   - `  vv`: shows each ansible task that is being executed and the file it
+##             is executed from
+##   - ` vvv`: shows detailed output/results of every ansible task
+##   - `vvvv`: shows the (ssh/winrm) connection details that ansible uses to
+##              connect to the remote hosts
+## - Additionally, `-vvvvv` is used to enable Ansible's debug output.
+function set_debug_levels() {
+  [string] verbosity=''
+
+  # Check `verbosity` for characters other than 'v'
+  if ! [[ "$verbosity" =~ ^v*$ ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  declare -Ag DEBUG_LEVELS
+  DEBUG_LEVELS=(
+    [ansible_verbose]=''
+    [ansible_debug]='false'
+  )
+
+  DEBUG_LEVELS['ansible_verbose']="${verbosity:+-}$verbosity"
+
+  if [[ "${#verbosity}" -ge 5 ]]; then
+    DEBUG_LEVELS['ansible_debug']=true
+  fi
+}
+
+
+## @fn info()
+## @brief Print message to stdout
+## @param message ***string*** The message to print (__default__: `### DEBUG`)
+## @param delay ***decimal*** Time delay after printing (__default__: 0.1)
+function info() {
+  [string] message='### DEBUG'
+  [string] delay=0.1
+  [string] color='yellow'
+
+  # Check that `interval` and `timeout` are actually decimals
+  local re='([0-9]+)|[0-9]*\.[0-9]+'
+  if ! [[ "$delay" =~ $re ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  color="UI_Color_${color^}"
+
+  COLUMNS=91 @go.printf \
+    "${!color}%b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
+  # <<-CODE-NOTE: `COLUMNS` is set to 91 instead of 80 due to the no width
+  #               color characters (we want to have 80 characters output).
+
+  sleep "$delay"
+}
+
+
+## @fn abort()
+## @brief Print message to stderr and exit
+## @param message ***string*** The message to print (__default__: '')
+## @param exit_code ***integer*** The exit code to exit with (__default__:
+##        _HEADSTART_EC_GENERR)
+function abort() {
+  [string] message=''
+  [string] exit_code="$_HEADSTART_EC_GENERR"
+
+  if ! [[ "$exit_code" =~ [0-9]+ && "$exit_code" -ge 0 &&
+    "$exit_code" -le 255 ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  if [[ "$message" != '' ]]; then
+    COLUMNS=100 @go.printf \
+      "${UI_Color_Red}${UI_Color_Bold}Error: ${UI_Color_NoBold}%b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
+    # <<-CODE-NOTE: `COLUMNS` is set to 91 instead of 80 due to the no width
+    #               color characters (we want to have 80 characters output).
+  fi
+
+  exit "$exit_code"
+}
+
+
+## @fn warn()
+## @brief Print message to stdout with different color than info()
+## @param message ***string*** The message to print
+function warn() {
+  @required [string] message
+
+  COLUMNS=91 @go.printf "${UI_Color_Magenta}Warning: %b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
+}
+
+
+function set_standard_outputs() {
+  # TODO consider go-script lib/file for handling descriptors
+  # In bash, by default the stdout is the terminal on the screen. Bash has some file
+  # descriptors to keep track of the 'out's. STDOUT has descriptor '1' and STDERR has
+  # descriptor '2'. We set here a variable, named very succintly STDOUT, where we will
+  # keep track of where the screen is. We do that because if debugging is not set
+  # we want to display minimal info to the user. So, we set file descriptor 1 to
+  # /dev/null. But before that, we keep track of the screen on a new desccriptor, '3'.
+  # STDOUT will then containt the number 3. So, when we want to display some info
+  # to the user even when debugging is off, we now know were the screen is.
+  declare -i -x -g STDOUT=8
+  declare -i -x -g STDERR=9
+
+  exec 8>&1
+  exec 9>&2
+  exec 1>&2
+
+  if [ "$debug" = ffffalse ]; then
+    # We do not want to output every command run in the scripts to the screen.
+    # We only want to do that if the user requested it for debugging purposes.
+    # Otherwise, we need to output only informational text with the `info`
+    # function (see lib.sh). Below, we are redirecting all output to /dev/null
+    # by default. We keep however the screen file descriptor to override this
+    # default when really needed in the code (by appending >&${STDOUT} to
+    # commands whose output we need).
+
+    # create a file descriptor that points to current stderr (the screen)
+    STDERR=4
+    # redirect stdout to /dev/null
+    exec >/dev/null
+    # we are not redirecting stderr, to show errors even without debugging enabled
+  fi
+}

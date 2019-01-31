@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+#
+# Commands to help with development
+
+
+. "$_GO_USE_MODULES" 'subcommands'
+
+@go.show_subcommands
+

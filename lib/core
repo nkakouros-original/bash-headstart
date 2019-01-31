@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# TODO merge these 'get' functions into one that accepts the ini key as
+# argument
+#      and use lib/ini to parse the file
+
+
+function core_get_installed_version() {
+  declare -xg version
+  declare -xg version_major
+  declare -xg version_minor
+  declare -xg version_patch
+
+  if [[ ! -f "$_HEADSTART_CORE_LOCK" ]]; then
+    echo 0
+    # <<-CODE-NOTE A version of 0 means that the project is not installed yet.
+    return
+  fi
+
+  while read -s line; do
+    if [[ "$line" =~ ^version=([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+      version_major="${BASH_REMATCH[1]}"
+      version_minor="${BASH_REMATCH[2]}"
+      version_patch="${BASH_REMATCH[3]}"
+      version="$version_major.$version_minor.$version_patch"
+    fi
+  done < "$_HEADSTART_CORE_LOCK"
+}
+
+# TODO rename this to core_get_downloaded_version
+function core_get_new_version() {
+  local version
+
+  while read -s line; do
+    if [[ "$line" =~ ^version=(.*) ]]; then
+      version="${BASH_REMATCH[1]}"
+    fi
+  done < "$PROJECT_DIR/version"
+
+  echo "$version"
+}
+
+
+function core_check_upgrades() {
+  current_version="$(core_get_installed_version)"
+  downloaded_version="$(core_get_new_version)"
+
+  if [[ "$current_version" == '0' ]]; then
+    return
+    # <<-CODE-NOTE A version of 0 means that the project is not installed yet.
+  fi
+
+  if [[ "$current_version" != "$downloaded_version" ]] &&
+     [[ ! "${1-}" == "core" && "${2-}" == 'upgrade' ]]; then
+    msg=("pending upgrades from $current_version to $downloaded_version")
+    msg+=("run '$_HEADSTART_CMD core upgrade' first")
+    abort "${msg[*]}"
+  fi
+}
+
+

@@ -1,0 +1,11 @@
+[submodule "vendor/go-script-bash"]
+	path = vendor/go-script-bash
+	url = https://github.com/tterranigma/go-script-bash
+	branch = stable
+[submodule "vendor/bash-infinity"]
+	path = vendor/bash-infinity
+	url = https://github.com/niieani/bash-oo-framework
+[submodule "vendor/autohook"]
+	path = vendor/autohook
+	url = https://github.com/tterranigma/Autohook
+	branch = stable

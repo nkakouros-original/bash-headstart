@@ -1,0 +1,438 @@
+#!/usr/bin/env bash
+#
+# Bootstrap the tool on this machine
+#
+# Usage:
+#   {{go}} {{cmd}} [options]
+#
+# Options:
+#   --force|-f          Re-run bootstrap even if the tool is already
+#                       bootstrapped
+#
+#
+# Notes:
+#
+#   - The `--force` option is useful when you need to recreate project
+#     configuration that was accidentally deleted/modified (the files
+#     /etc/profile.d/{{go}}.sh and project.conf)
+#
+#
+# Examples:
+#
+#   Bootstrap the tool:
+#     {{go}} {{cmd}}
+#
+#   Re-run bootstrap:
+#     {{go}} {{cmd}} --force
+
+
+# TODO add version checks
+# TODO inform about sudo
+# TODO install hydra, msfconsole, etc only if devel
+
+function core_bootstrap_install_command() {
+  local command
+  command=" \
+    cd '\"'$PWD'\"' \&\& \
+    eval '\"'\$\('\"$PWD/headstart\"' env $_HEADSTART_CMD\)'\"' \
+    \&\& cd - \
+    \>/dev/null"
+
+  sudo su -c " \
+    echo export HEADSTART_INSTALLATION_DIR='\"'$PWD'\"' \
+    >| /etc/profile.d/$_HEADSTART_CMD.sh \
+  "
+
+  sudo su -c "echo $command >> /etc/profile.d/$_HEADSTART_CMD.sh"
+}
+
+
+function core_bootstrap_system() {
+  # <<-CODE-NOTE: This fixes an issue where under some circumstances ssh-ing to
+  # an instances and installing the project there would make it so that the
+  # "LC_ALL" environment variable is not set. In that case, perl would complain
+  # and produce warning that would break the `core bootstrap` command.
+  if [[ "${LC_ALL:-}" == '' ]]; then
+    export LC_ALL='en_US.UTF-8'
+    sudo su -c "echo 'LC_ALL=en_US.utf8' >> /etc/profile.d/$_HEADSTART_CMD.sh"
+  fi
+
+  # TODO revisit this
+  sudo su -c "echo \
+    'function __headstart_set_ps1_prompt() {
+      if [[ \"\$(pwd)\" == \"\$HEADSTART_INSTALLATION_DIR\" ]]; then
+        if [[ ! -v OLD_PS1 ]]; then
+          OLD_PS1=\"\$PS1\"
+        fi
+        local world
+        world=\"\$(readlink -f \"$PROJECT_DIR/vars/active\")\"
+        world=\"\${world##*/}\"
+        world=\"\${world%-*}\"
+        PS1=''
+        PS1+=\"[\\u@\\h\"
+        PS1+=\"\\[${UI_Color_Dim}\\]\"
+        PS1+=\"\\[${UI_Color_LightGray}\\]\"
+        PS1+=\"|>\"
+        PS1+=\"\\[${UI_Color_Yellow}\\]\"
+        PS1+=\"\\[${UI_Color_Italics}\\]\"
+        PS1+=\"${_HEADSTART_CMD}:\"
+        PS1+=\"\\[${UI_Color_Blue}\\]\"
+        PS1+=\"\\[${UI_Color_Italics}\\]\"
+        PS1+=\"\$(git rev-parse --abbrev-ref HEAD)\"
+        PS1+=\"\\[${UI_Color_Default}\\]\"
+        PS1+=\"]\"
+        PS1+=\"\\[${UI_Color_Bold}\\]\"
+        PS1+=\"\\[${UI_Color_Cyan}\\]\"
+        PS1+=\"\\n\"
+        PS1+=\"\${world}\"
+        PS1+=\"\\[${UI_Color_Default}\\]\"
+        PS1+=\":> \"
+        export PS1
+      else
+        if [[ -v OLD_PS1 ]]; then
+          export PS1=\"\$OLD_PS1\"
+          unset OLD_PS1
+        fi
+      fi
+    };
+    PROMPT_COMMAND=__headstart_set_ps1_prompt' \
+  >> /etc/profile.d/$_HEADSTART_CMD.sh"
+}
+
+
+function core_bootstrap_install_dependencies() {
+  . "$_GO_USE_MODULES" 'platform'
+
+  local path
+  path="$_HEADSTART_CORE_DIR/commands/core.d/bootstrap.d/$_GO_PLATFORM_ID.sh"
+  if [[ -f "$path" ]]; then
+    . "$path"
+  fi
+}
+
+
+function core_bootstrap_ask_passphrase() {
+  . "$_GO_USE_MODULES" 'prompt'
+
+  eval "$(ssh-agent -t 30)"
+
+  # TODO do this generic in a loop
+  @go.prompt_for_input \
+    github_com_key \
+    'github.com key path: ' \
+    "$HOME/.ssh/id_rsa"
+
+  ssh-add "$github_com_key"
+
+  @go.prompt_for_input \
+    kth_github_key \
+    'KTH github key path: ' \
+    "$HOME/.ssh/id_rsa"
+
+  if [[ "$kth_github_key" != "$github_com_key" ]]; then
+    ssh-add "$kth_github_key"
+  fi
+}
+
+
+function core_bootstrap_git_submodules() {
+  info "Initializing git submodules"
+
+  ssh-keyscan github.com >> ~/.ssh/known_hosts
+  # <<-CODE-NOTE We are adding the signature of the public key of github.com to
+  #              the known hosts to avoid interactive prompts during git
+  #              operations asking whether we accept/trust the key.
+
+  git submodule update --init --recursive --remote
+
+  # <<-CODE-NOTE At this point, git knows about the branches that exist on the
+  #              remotes. But, there are no local branches other than master
+  #              (which tracks the origin/master branch). This is inconvenient.
+  #              If at this point we give `git branch`, only "master" will be
+  #              returned (we will have to give `git branch -r/-a` to see the
+  #              remote/all branches). Similarly if we try to `git push -all`,
+  #              only master will be pushed as it is the only local branch.
+  #              Here, we set up local branches with the same name as the
+  #              remote branches on "origin" and we set them to track those
+  #              remote branches.
+  while IFS=, read module mirror; do
+    # TODO make some of these actions lib functions, the
+    # Find the folder in the project where the module lies in.
+    folder="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep path)"
+    folder="${folder#*path = }"
+
+    cd "$PROJECT_DIR/$folder" || exit 1
+
+    current_branch="$(git branch | grep '*' | cut -d' ' -f2)"
+
+    git branch -r |
+      grep -v '\->' |
+      grep origin |
+      while read branch; do
+        echo "$module $branch"
+        if [[ "${branch#origin/}" != "$current_branch" ]]; then
+          git branch -f --track "${branch#origin/}" "$branch"
+        fi
+      done
+  # why .gitmirrors? Rethink what I do with remotes, branches, etc
+  done <<< "$(grep -v '^#' "$PROJECT_DIR/.gitmirrors" | grep -v '^$')"
+
+  cd "$PROJECT_DIR" || return 1
+
+  info "-> Submodules initialized!"
+}
+
+
+function core_bootstrap_git_collab() {
+  # <<-CODE-NOTE Here we add mirrors to the main git project. While we develop
+  #              this project for the EN2720 Ethical Hacking course, there are
+  #              many occasions when we need to share the code with others on
+  #              other git repos than the main KTH github one. See .gitcollab
+  #              for a list of these repos.
+
+  if [[ -e "$PROJECT_DIR/.gitcollab" ]]; then
+    while IFS=, read remote repo branch; do
+      # If .gitcollab has no repos, the `while` loop will still run once creating
+      # a faulty pre-push
+      if [[ "$repo" == "" ]]; then
+        continue
+      fi
+      if ! grep "$remote" > /dev/null <<< "$(git remote)"; then
+        git remote add "$remote" "$repo"
+      fi
+    done <<< "$(grep -v '^#' "$PROJECT_DIR/.gitcollab" | grep -v '^$')"
+  fi
+}
+
+
+function core_bootstrap_git_upstream() {
+  # <<-CODE-NOTE Some of the 3rd party projects we are using needed to be
+  #              patched to match our requirements. We cloned them and created
+  #              patched versions. We did pull requests to the original
+  #              projects. But until those pull requests get accepted (if ever),
+  #              we need to pull the patched versions from our own repos.  So,
+  #              we have added these projects as git submodules to be pulled
+  #              from our own, personal, FOSS repos. Yet, for development
+  #              purposes it is convenient to also keep track of the upstream
+  #              repos, so that if we can pull new features. We keep track of
+  #              these upstream repo urls in the .gitupstreams file. Here, we
+  #              add them us the `upstream` remote to gitmodules.
+
+  while IFS=, read module remote; do
+    # Find the folder in the project where the module lies in.
+    folder="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep path)"
+    folder="${folder#*path = }"
+
+    cd "$PROJECT_DIR/$folder" || exit 1
+
+    remotes="$(git remote)"
+    if ! grep "upstream" > /dev/null <<< "$remotes"; then
+      git remote add upstream "$remote";
+    fi
+  done <<< "$( grep -v '^#' "$PROJECT_DIR/.gitupstreams" | grep -v '^$')"
+
+  cd "$PROJECT_DIR" || exit 1
+}
+
+
+function core_bootstrap_git_kth() {
+  # <<-CODE-NOTE There is some code we have written for the project that we
+  #              want to make publicly available as a FOSS contribution. To
+  #              make this code public we have to host it somewhere other than
+  #              KTH github as it is locked down. Thus, we are offering the
+  #              code on our own personal, open repositories on github.com. But
+  #              this is risky for the project as people come and go in the
+  #              project and those repositories might not always be available.
+  #              Thus, we mirror everything back to KTH github. Other than our
+  #              FOSS contributions, we also need to mirror our patched
+  #              versions of upstream projects for the same reasons. Here, we
+  #              are adding these mirror KTH github repositories.
+
+  while IFS=, read module mirror; do
+    # Find the folder in the project where the module lies in.
+    folder="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep path)"
+    folder="${folder#*path = }"
+
+    cd "$PROJECT_DIR/$folder" || exit 1
+
+    # Check if kth remote has already been added as a remote. If not, add it.
+    remotes="$(git remote)"
+    if ! grep "kth" > /dev/null <<< "$remotes"; then
+      git remote add "kth" "$mirror";
+      mirrored=true
+    fi
+  done <<< "$(grep -v '^#' "$PROJECT_DIR/.gitmirrors" | grep -v '^$')"
+
+  cd "$PROJECT_DIR" || exit 1
+}
+
+
+function core_bootstrap_git_checkout_stable() {
+  modules="$( \
+    sed -E 's/\[submodule "([^"]*)\"]/\1/' "$PROJECT_DIR/.gitmodules" |
+    grep -vE "^\s" \
+  )"
+
+  for module in $modules; do
+    folder="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep path)"
+    folder="${folder#*path = }"
+    branch="$( grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep "branch =")"
+    branch="${branch#*branch = }"
+
+    cd "$PROJECT_DIR/$folder" || exit 1
+
+    # When we pulled git modules in core_bootstrap_git_modules, git checked out
+    # the last commit in the branch that we have setup for each submodule and
+    # not the branch itself. Thus, these repos are in `DETACHED HEAD mode`.
+    # This is inconvenient. Here, we checkout the defined branches themselves.
+    if [[ "$branch" == "" ]]; then
+      continue
+    fi
+
+    git checkout "$branch"
+  done
+
+  cd "$PROJECT_DIR" || exit 1
+}
+
+
+function core_bootstrap_git_hooks() {
+  info "Installing git hooks"
+
+  export AUTOHOOK_HOOKS_DIR="$_HEADSTART_CORE_DIR/misc/git/hooks"
+  "$_HEADSTART_CORE_DIR/vendor/autohook/autohook.sh" 'install'
+
+  local cmd
+  cmd+="echo export "
+  cmd+="AUTOHOOK_HOOKS_DIR='\"'$_HEADSTART_CORE_DIR/misc/git/hooks'\"'"
+  cmd+=" >> /etc/profile.d/$_HEADSTART_CMD.sh"
+  sudo su -c "$cmd"
+}
+
+
+function core_bootstrap_set_version() {
+  touch "$_HEADSTART_CORE_LOCK"
+
+  while read -s line; do
+    if [[ "$line" =~ ^version=.* ]]; then
+      echo "${BASH_REMATCH[0]}" > "$_HEADSTART_CORE_LOCK"
+    fi
+  done < "$PROJECT_DIR/version"
+}
+
+
+# TODO do this generic, load prompts from conf file
+function core_bootstrap_configure() {
+  @required [boolean] confirm
+
+  . "$_GO_USE_MODULES" "prompt"
+
+  local project_prompt
+  local reuse_prompt
+  local old_project
+  local old_reuse
+
+  if [[ "$confirm" == 'true' && -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
+    string="The project has already been configured. "
+    string+="Do you want to overwrite the existing configuration?"
+    if ! @go.prompt_for_yes_or_no "$string" 'no'; then
+      return
+    fi
+
+    [[ "$(< "$_HEADSTART_PROJECT_CONFIG")" =~ project\ =\ ([^[:space:]]+) ]]
+    old_project="${BASH_REMATCH[1]}"
+    project_prompt="ID of Google Cloud project (old value is default): "
+
+    [[ "$(< "$_HEADSTART_PROJECT_CONFIG")" =~ world_reuse\ =\ ([^[:space:]]+) ]]
+    old_reuse="${BASH_REMATCH[1]}"
+    reuse_prompt="players per world (old value is default): "
+  fi
+
+  echo '[default]' >| "$PROJECT_DIR/project.conf"
+
+  project_prompt="${project_prompt-ID of Google Cloud project: }"
+  local project=''
+  @go.prompt_for_input \
+    "project" \
+    "$project_prompt" \
+    "${old_project-}" \
+    '' "${old_project:-required}"
+
+  echo "project = $project" >> "$PROJECT_DIR/project.conf"
+
+  reuse_prompt="${reuse_prompt-players per world: }"
+  local world_reuse=''
+  while [[ ! "$world_reuse" =~ ^[0-9]+$ ]]; do
+    @go.prompt_for_input \
+      "world_reuse" \
+      "$reuse_prompt" \
+      "${old_reuse-}" \
+      '' "${old_reuse:-required}"
+  done
+
+  echo "world_reuse = $world_reuse" >> "$_HEADSTART_PROJECT_CONFIG"
+}
+
+
+function core_bootstrap_lock() {
+  echo "status=bootstrapped" >> "$_HEADSTART_CORE_LOCK"
+}
+
+
+function core_bootstrap() {
+  local force=false
+  local confirm=true
+
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      --force|-f)
+        force=true
+        ;;
+      --noconfirm)
+        confirm=false
+        ;;
+      -*)
+        abort "unrecognized option: $1" "$_HEADSTART_EC_USAGE"
+        ;;
+      *)
+        abort "unrecognized command: $1" "$_HEADSTART_EC_USAGE"
+        ;;
+    esac
+    shift
+  done
+
+  . "$_GO_USE_MODULES" 'installation' 'world' 'core'
+
+  if [[ "$(get_installation_status)" == 'bootstrapped' && "$force" == 'false' ]]; then
+    warn 'project is already bootstrapped, nothing to do'
+    exit
+  fi
+
+  core_bootstrap_ask_passphrase
+  core_bootstrap_configure "$confirm"
+  core_bootstrap_install_command
+  core_bootstrap_system
+  core_bootstrap_git_hooks
+  core_bootstrap_install_dependencies
+  # TODO unify git functions
+  core_bootstrap_git_submodules
+  core_bootstrap_git_collab
+  core_bootstrap_git_upstream
+  core_bootstrap_git_kth
+  core_bootstrap_git_checkout_stable
+
+  local project_bootstrap_function="${_HEADSTART_CMD}_bootstrap"
+  if [[ "$(type -t "$project_bootstrap_function")" == 'function' ]]; then
+    "$project_bootstrap_function"
+  fi
+
+  # TODO unify these last two functions
+  core_bootstrap_set_version
+  core_bootstrap_lock
+
+  info 'bootstrap complete'
+}
+
+
+core_bootstrap "$@"
+

@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+
+set -o nounset            # emits error if an undefined variable is used
+set -o pipefail           # emits error if a command in a pipe chain fails
+shopt -s expand_aliases   # allows the use of aliases in scripts
+shopt -s extglob          # enables extended globbing, eg "@(aa|bb)"
+
+## @fn system_load_outro()
+## @brief Loads the outro script
+##
+## Here we set the EXIT trap. The EXIT trap is run always at the very end of
+## execution. The ERR trap (and others) are run before the EXIT trap, if they
+## need to run at all.
+function system_load_outro() {
+  exit_code="$?"
+
+  # . "$PROJECT_DIR/$GO_SCRIPTS_DIR/lib/outro"
+
+  # Not really needed
+  # if [[ -v HEADSTART_INSTALLATION_DIR ]]; then
+    # cd "$(dirs -l -0)" >/dev/null || exit 1
+  # fi
+
+  # TODO the following always exits with 00
+  # Exception::CleanUp
+  rm -f $__oo__storedExceptionLineFile $__oo__storedExceptionSourceFile $__oo__storedExceptionBacktraceFile $__oo__storedExceptionFile
+  exit "$exit_code"
+}
+trap system_load_outro EXIT
+
+## @fn Exception::CustomCommandHandler()
+## @brief Overrides the corresponding Bash Infinity function
+## @param BASH_SOURCE \global
+##
+## For handling errors gracefully, we are using the 'utils/exception' module of
+## Bash Infinity. This module will print a nice execution stack whenever a
+## command in the scripts returns with a return code different to '0' (similar
+## to 'set -e', but it does not stop execution). But this is problematic when
+## doing TAB auto-completion in Bash. Then, the
+## '$HEADSTART_VENDOR_DIR/go-bash-script/libexec/complete' functions are called in an
+## execution sequence that includes 4, 5 commands that return 1 when there is no
+## candidate for completion (eg 'headstart world f<TAB>') . This causes Bash
+## Infinity to trigger exception handling and print execution stacks in the
+## command line. Instead, nothing should be printed to the user. One solution
+## would be to patch go-script-bash's auto-completion to not return 1 if there is
+## no actual error. Here, we do sth different. If the 'libexec/complete'
+## functions are called at some point in the execution, we unset the ERR trap
+## that Bash Infinity sets.
+# TODO fix this in go-script level https://github.com/mbland/go-script-bash/issues/234
+function Exception::CustomCommandHandler() {
+  [integer] exit_code=1
+
+  # FOR tests
+  if [[ "${_GO_BATS_DIR-}" != '' ]]; then
+    if [[ "${e-}" != '' ]]; then
+      echo "$e"
+    fi
+    exit $exit_code
+  fi
+
+  if (( _GO_EC_BASE <= $exit_code && $exit_code <= _GO_EC_MAX )); then
+    # go-script-bash exit codes
+    exit $exit_code
+  elif [[ "$exit_code" == '126' ]]; then
+    # TODO is this needed
+    # our custom error code for 'abort()'
+    exit $exit_code
+  else
+    return 1
+  fi
+}
+
+#?????
+function show_subcommands() {
+  . "$_GO_USE_MODULES" 'subcommands'
+  @go.show_subcommands || exit
+}

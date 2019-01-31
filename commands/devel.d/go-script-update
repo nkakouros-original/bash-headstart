@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+#
+# Update go-script-bash
+#
+# Usage:
+#   {{go}} {{cmd}}
+#
+#
+# Notes:
+#
+#   - `go-script-bash` is a framework the tool uses. It provides the basis for
+#     the cli interface of the tool
+#
+#
+# Examples:
+#
+#   Update go-script-bash:
+#     {{go}} {{cmd}}
+
+
+function devel_go_srcipt_update_update() {
+  info "downloading stable branch"
+
+  url='https://github.com/tterranigma/go-script-bash/archive/stable.zip'
+  wget -nd -q -O "$HEADSTART_TMP_DIR/go-script.zip" "$url"
+
+  info "extracting zip"
+  unzip -qq -o -d "$HEADSTART_TMP_DIR" "$HEADSTART_TMP_DIR/go-script.zip"
+  cp -r "$HEADSTART_TMP_DIR/go-script-bash-stable/"* "$HEADSTART_VENDOR_DIR/go-script-bash/"
+
+  info "go-script-bash updated"
+}
+
+
+function devel_go_srcipt_update() {
+  while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+      -*)
+        abort "unrecognized option: $1" "$_HEADSTART_EC_USAGE"
+        ;;
+      *)
+        abort "unrecognized command: $1" "$_HEADSTART_EC_USAGE"
+        ;;
+    esac
+    shift
+  done
+
+  devel_go_srcipt_update_update
+}
+
+
+devel_go_srcipt_update "$@"

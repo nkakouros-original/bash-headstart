@@ -1,0 +1,290 @@
+#!/usr/bin/env bash
+
+# TODO write tests
+# TODO add error logging
+# TODO define the regexps according to the spec
+declare -rg YAML_FLAT_LIST_ITEM='- ([^:]+)'
+declare -rg YAML_SPACE_ONLY_LINE='^[[:space:]]*$'
+declare -rg YAML_COMMENT_LINE='^[[:space:]]*#'
+declare -rg YAML_HEADER_SEPARATOR='---'
+declare -rg YAML_JUNK="$YAML_SPACE_ONLY_LINE|$YAML_COMMENT_LINE|$YAML_HEADER_SEPARATOR"
+declare -rg YAML_MAP_KEY='([a-zA-Z0-9_]+): .*'
+declare -rg YAML_MAP_RECORD='([a-zA-Z0-9_]+): (.*)'
+
+# TODO rename this to yaml_get_block or yaml_get_key
+function yaml_get_top_block() {
+  yaml="${1-}"
+  local key="${2-}"
+  local include_first_line='false'
+  local block=''
+  local -i indent=-1
+  local found='false'
+
+  if [[ "$yaml" == '' || "$key" == '' ]]; then
+    @go.printf 'ERror'
+    exit 1
+  fi
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^[[:space:]]*$key:.* || "$found" == 'true' ]]; then
+      if [[ "$line" =~ $YAML_JUNK ]]; then
+          continue
+      fi
+
+      if [[ "${indent}" -eq -1 ]]; then
+        indent="$(yaml_get_indent "$line")"
+        found='true'
+        if [[ "$include_first_line" == 'true' ]]; then
+          block="$line"
+        fi
+        continue
+      fi
+
+      if [[ "$line" =~ ^([[:space:]]*)(- )? ]]; then
+        if [[ "${#BASH_REMATCH[1]}" -gt "$indent" ]]; then
+          block="$block
+          $line"
+        elif [[ "${#BASH_REMATCH[1]}" -eq "$indent" && "${BASH_REMATCH[2]}" == '- ' ]]; then
+          block="$block
+          $line"
+        elif [[ "${#BASH_REMATCH[1]}" -le "$indent" ]]; then
+          break
+        fi
+      fi
+    else
+      continue
+    fi
+  done <<< "$yaml"
+
+  echo "$block"
+}
+
+function yaml_flat_map_to_bash_array() {
+  local map="${1-}"
+  local array_name="${2-array}"
+  local -A array
+  local -i indent=-1
+# TODO get array name if passed with the text
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ $YAML_JUNK ]]; then
+      continue
+    fi
+
+    if [[ "${indent}" -eq -1 ]]; then
+      indent="$(yaml_get_indent "$line")"
+    fi
+
+    if [[ "$line" =~ ^([[:space:]]*) ]]; then
+      if [[ "${#BASH_REMATCH[1]}" -gt "$indent" ]]; then
+        # TODO should fail, as we are doing 'flat_map'
+        continue
+      elif [[ "${#BASH_REMATCH[1]}" -lt "$indent" ]]; then
+        exit "$_GO_EC_BADFRMT"
+      fi
+    fi
+
+    local value
+    if [[ "$line" =~ $YAML_MAP_RECORD ]]; then
+      value="${BASH_REMATCH[2]%%#*}"
+      value="${value%%[[:space:]]}"
+      array+=(["${BASH_REMATCH[1]}"]="$value")
+      # return "$_GO_EC_BADFRMT"
+    fi
+  done <<< "$map"
+
+  local declaration="$(declare -p array)"
+  declaration="${declaration/declare -A array=/declare -Ag $array_name=}"
+  unset array
+  eval "$declaration"
+}
+
+# TODO revisit this!
+# TODO rename maps to dicts to not confuse with the map function
+function yaml_map_attribute() {
+  local list="${1- }"
+  local attribute="${2-}"
+  local array_name="${3-array}"
+  local -a array=()
+  local -a results=()
+  local dict=''
+  local -i indent=-1
+
+  #TODO add checks for correct list format
+  while read -r line; do
+    if [[ "${indent}" -eq -1 ]]; then
+      indent="$(yaml_get_indent "$line")"
+    fi
+
+    if [[ "$line" =~ ^([[:space:]]*) ]]; then
+      if [[ "${#BASH_REMATCH[1]}" -gt "$indent" ]]; then
+        array+=("$line")
+      elif [[ "${#BASH_REMATCH[1]}" -eq "$indent" ]]; then
+        if [[ "${array[@]}" != '' ]]; then
+          yaml_bash_array_to_yaml array
+          dict="$(yaml_bash_array_to_list array)"
+          yaml_map_to_bash_array "$dict" dict
+          results+=("${dict[$attribute]}")
+        fi
+        array=("$line")
+      elif [[ "${#BASH_REMATCH[1]}" -lt "$indent" ]]; then
+        return "$_GO_EC_BAD_FRMT"
+      fi
+    fi
+  done <<< "$list"
+
+  local declaration="$(declare -p results)"
+  declaration="${declaration/declare -A results=/declare -Ag $array_name=}"
+  unset results
+  eval "$declaration"
+}
+
+function yaml_bash_array_to_yaml() {
+  local array_name="${1-}[@]"
+  array=("${!array_name}")
+  local yaml=''
+
+  for line in "${array[@]}"; do
+    echo "$line"
+    yaml="$yaml${yaml+\n}$line"
+  done
+
+  echo -e "$yaml"
+}
+
+function yaml_flat_list_to_array() {
+  # TODO rewrite using yaml_get_indent
+  # TODO remove comments
+  local list="${1-- }"
+  local array_name="${2-array}"
+  local -a array=()
+
+  declare -a -g "$array_name"
+  while read -r list_item; do
+    if [[ "$list_item" =~ $YAML_JUNK ]]; then
+      continue
+    elif [[ "$list_item" =~ $YAML_FLAT_LIST_ITEM ]]; then
+      array+=( "${BASH_REMATCH[1]}" )
+    else
+      exit "$_GO_EC_BADFRMT"
+    fi
+  done <<< "$list"
+
+  declare -a -g "${array_name}"
+  eval "$array_name=( "${array[@]}" )"
+}
+
+function yaml_map_keys_extract_first_level() {
+  local map="{$1-}"
+  local array_name="${2-array}"
+  local -a array=()
+  local -i indent=-1
+
+  declare -a -g "$array_name"
+
+  local line
+  while IFS= read -r line; do
+    if [[ "$line" =~ $YAML_JUNK ]]; then
+      continue
+    fi
+
+    if [[ "${indent}" -eq -1 ]]; then
+      indent="$(yaml_get_indent "$line")"
+    fi
+
+    # Check for same level indents
+    if [[ "$line" =~ ^([[:space:]]*) ]]; then
+      if [[ "${#BASH_REMATCH[1]}" -gt "$indent" ]]; then
+        continue
+      elif [[ "${#BASH_REMATCH[1]}" -lt "$indent" ]]; then
+        @go.printf "%s\n" "The supplied text is not a valid map"
+        exit "$_GO_EC_BAD_FRMT"
+      fi
+    fi
+
+    if [[ "${line}" =~ $YAML_MAP_KEY ]]; then
+      array+=("${BASH_REMATCH[1]}")
+    fi
+
+  done <<< "$map"
+
+  eval "$array_name=( "${array[@]}" )"
+}
+
+function yaml_get_indent() {
+  line="${1-}"
+  local -i indent
+
+  if [[ "$line" =~ ^([[:space:]]*)[^[:space:]] ]]; then
+    indent="${#BASH_REMATCH[1]}"
+  else
+    indent=0
+  fi
+
+  echo "$indent"
+}
+
+#TODO
+function yaml_map_validate() {
+  :
+}
+
+function yaml_flat_list_validate() {
+  :
+}
+
+function yaml_get_key() {
+  local map="${1-}"
+  local query_path="${2-}"
+  local -i indent=-1
+  local -i index=0
+  local reached='false'
+  local value=''
+
+  IFS='.' read -ra query_path <<< "$query_path"
+  local -i query_length="${#query_path[@]}"-1
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ $YAML_JUNK ]]; then
+      continue
+    fi
+
+    if [[ "$line" =~ ^([[:space:]]*) ]]; then
+      if [[ "$reached" == 'true' && "${BASH_REMATCH[1]}" -ge "$indent" ]]; then
+        value="$value
+          $line"
+      elif [[ "$reached" == 'true' ]]; then
+        break
+      elif [[ "$reached" == 'false' && "${BASH_REMATCH[1]}" -lt "$indent" ]]; then
+        abort "Not found" "$_GO_EC_NOTFND"
+      fi
+    fi
+
+    if [[ "$line" =~ ^([[:space:]])*${query_path[$index]}:(\ .*)? ]]; then
+      if [[ "${BASH_REMATCH[2]}" != '' && "$index" -eq "$query_length" ]]; then
+        value="${BASH_REMATCH[2]# }"
+        break
+      elif [[ "${BASH_REMATCH[2]}" != '' ]]; then
+        abort "Not found" "$_GO_EC_NOTFND"
+      elif [[ "${BASH_REMATCH[2]}" == '' && "$index" -eq "$query_length" ]]; then
+        reached='true'
+        indent="${#BASH_REMATCH[1]}"
+        continue
+      else
+        index+=1
+        indent="${#BASH_REMATCH[1]}"
+        continue
+      fi
+    fi
+
+    # TODO not done
+    if [[ "${query_path[$index]}" =~ ^[[:digit:]]+$ ]]; then
+      if [[ "$line" =~ ^$indent[[:space:]]*-\ (.*) ]]; then
+        inside_list='true'
+      fi
+    fi
+
+  done <<< "$map"
+
+  echo "$value"
+}

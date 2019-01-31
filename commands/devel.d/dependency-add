@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+# This file prompts the user for info on a new dependency to be added. The code
+# should be self explanatory.
+
+echo "Give the folder under which the dependency should be found." \
+  "Example: roles/vulnerabilities" >&${STDOUT}
+echo -n "installation folder: " >&${STDOUT}
+read folder
+
+while ! [ -d "$PROJECT_DIR/$folder" ] || [[ $folder =~ ^\.?$ ]]; do
+  echo "The directory you gave is not a valid one. Make sure it exists and it" \
+    "is not the root of the project." >&${STDOUT}
+  read -p "installation folder: " folder
+done
+
+info "OK"
+
+echo "Give the name of the new dependency (will also be the name of the" \
+  "folder where the dependency will be downloaded into under $folder)." \
+  "Example: ansible-role-php" >&${STDOUT}
+read -p "dependency name: " name
+while [ -d "$PROJECT_DIR/$folder/$name" ]; do
+  echo "There already exists a folder '$name' under $folder. Please try" \
+    "another name for the dependency" >&${STDOUT}
+  read -p "dependency name: " name
+done
+
+info "OK"
+
+personal_repo=''
+echo "Give the public personal repo from where to clone the dependency. Type"\
+  "'skip' if there is no patched version of the dependency and you want to add"\
+  "add it directly from the upstream repositories (in a later step)."\
+  "Example: https://github.com/tterranigma/ansible-php-dns.git" >&${STDOUT}
+while [ "$personal_repo" == "" ]; do
+  read -p "personal repo: " personal_repo
+done
+
+info "OK"
+
+upstream_repo=''
+echo "Give the upstream repo that the original code for the dependency" \
+  "can be found. Type 'skip' if the dependency is our code made public as a" \
+  "FOSS contribution and there is no upstream other than the personal repo" \
+  "already added. Example: https://github.com/geerlingguy/ansible-role-php.git"\
+  >&${STDOUT}
+while [ "$upstream_repo" == "" ]; do
+  read -p "upstream repo: " upstream_repo
+done
+
+info "OK"
+
+# TODO create the documantation section
+kth_repo=''
+echo "Give the KTH repo url where the dependency will be mirrored to." \
+  "Type skip if not applicable. Please see the documentation on 'Adding new" \
+  "project dependencies'. Example:" \
+  "git@gits-15.sys.kth.se:pontusj/ansible-role-php.git" >&${STDOUT}
+while [ "$kth_repo" == "" ]; do
+  read -p "repo url: " kth_repo
+done
+
+if [ "$personal_repo" == "skip" ] && [ "$upstream_repo" == "skip" ]; then
+  abort "There was no public repo given, neither a 'personal' nor an 'upstream'\
+    one. Rerun 'make dependency_add' and provide at least one of the two types \
+    of repo".
+fi
+
+info "\nAdding the new dependency..."
+if [ "$upstream_repo" != "skip" ] && [ "$personal_repo" != "skip" ]; then
+  echo "$name,$upstream_repo" >> .gitupstreams
+fi
+
+if [ "$kth_repo" != "skip" ]; then
+  echo "$name,$kth_repo" >> .gitmirrors
+fi
+
+if [ "$personal_repo" != "skip" ]; then
+  git submodule add -b stable $personal_repo $folder/$name
+elif [ "$upstream_repo" != "skip" ]; then
+  git submodule add -b master $upstream_repo $folder/$name
+fi
+
+info "Dependency added at $folder/$name!"

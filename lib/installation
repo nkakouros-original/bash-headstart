@@ -1,0 +1,109 @@
+#!/usr/bin/env bash
+
+# TODO merge this core
+## @fn get_installation_status()
+## @brief Returns the project status
+## @return the project status
+##
+## Installation status is saved in \e .core.lock. It can have three states:
+## - unset: the project has not been installed
+## - bootstrapped: the project has been bootstrapped (via 'project bootstrap')
+function get_installation_status() {
+  local project_installation_status
+  project_installation_status='uninstalled'
+
+  if [[ -f "$_HEADSTART_CORE_LOCK" ]]; then
+    while read -s line; do
+      if [[ "$line" =~ ^status=(.*) ]]; then
+        project_installation_status="${BASH_REMATCH[1]}"
+      fi
+    done < "$_HEADSTART_CORE_LOCK"
+  fi
+
+  echo $project_installation_status
+}
+
+function installation_check_status() {
+  local installation_status
+  installation_status="$(get_installation_status)"
+
+  if [[ "$installation_status" != "bootstrapped" ]]; then
+    return "$_HEADSTART_EC_SIGN1"
+  fi
+}
+
+download_tarball() {
+  # GitHub removes the leading 'v' from the archive's output directory.
+  local url="$1"
+  local unpacked_dir="$2"
+  local install_dir="$3"
+  local protocol="${url%%://*}"
+  local download_cmd=()
+
+  if [[ "$protocol" == "$url" ]]; then
+    printf 'The download url has no protocol: %s\n' "$url" >&2
+    return 1
+  fi
+
+  if command -v curl >/dev/null; then
+    download_cmd=(curl -LfsS "$url")
+  elif command -v fetch >/dev/null; then
+    download_cmd=(fetch -o - "$url")
+  elif [[ "$protocol" == 'file' ]] && command -v cat; then
+    # `wget` can't handle 'file://' urls. Though input redirection would work
+    # below, this method is consistent with the process substitution logic.
+    download_cmd=(cat "${url#file://}")
+  elif command -v wget >/dev/null; then
+    download_cmd=(wget -O - "$url")
+  else
+    printf "Failed to find cURL, wget, or fetch\n" >&2
+    return 1
+  fi
+
+  if ! command -v tar >/dev/null; then
+    printf "Failed to find tar\n" >&2
+    return 1
+  fi
+
+  printf "Downloading from '%s'...\n" "$url"
+  mkdir -p "$install_dir"
+
+  if ! "${download_cmd[@]}" | tar -xzf - -C /tmp/ ||
+    [[ "${PIPESTATUS[0]}" -ne '0' ]]; then
+    printf "Failed to download from '%s'.\n" "$url" >&2
+    return 1
+  elif ! mv "/tmp/$unpacked_dir/"* "$install_dir"; then
+    printf "Failed to install downloaded directory in '%s'\n" \
+      "$install_dir" >&2
+    return 1
+  fi
+  printf "Download of '%s' successful.\n\n" "$url"
+}
+
+function installation_install() {
+  # Download go-bash-script if not there
+  if ! [[ -d "scripts/vendor/go-script-bash" ]]; then
+    download_url="https://github.com/tterranigma/go-script-bash/archive/stable.tar.gz"
+    unpacked_dir="go-script-bash-stable"
+    install_dir="scripts/vendor/go-script-bash"
+
+    if ! download_tarball "$download_url" "$unpacked_dir" "$install_dir"; then
+      exit 1
+    fi
+
+  fi
+
+  # Download bash infinity if not there
+  if ! [[ -d "scripts/vendor/bash-oo-framework" ]]; then
+    download_url="https://github.com/tterranigma/bash-oo-framework/archive/stable.tar.gz"
+    unpacked_dir="bash-oo-framework-stable"
+    install_dir="scripts/vendor/bash-oo-framework"
+
+    if ! download_tarball "$download_url" "$unpacked_dir" "$install_dir"; then
+      exit 1
+    fi
+  fi
+  unset download_url
+  unset unpacked_dir
+  unset install_dir
+}

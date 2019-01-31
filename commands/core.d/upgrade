@@ -1,0 +1,240 @@
+#!/usr/bin/env bash
+#
+# Upgrade the tool to latest version
+#
+# Usage:
+#   {{go}} {{cmd}}
+#
+#
+# Notes:
+#
+#   - After the new version has been downloaded (eg with `git pull; git
+#   checkout <version>`), the tool with prompt you if there is a pending
+#   upgrade
+#
+#
+# Examples:
+#
+#   Upgrade the tool:
+#     {{go}} {{cmd}}
+
+
+function core_upgrade_run_upgrades() {
+  . "$_GO_USE_MODULES" 'core' 'bash'
+
+  local version
+  if [[ ! -f "$_HEADSTART_CORE_LOCK" ]]; then
+    old_version='1.2.0'
+    new_version='1.3.0'
+    # <<-CODE-NOTE 1.2.0 is the version when this upgrade mechanism was
+    #              implemented.
+  else
+    old_version="$(core_get_installed_version)"
+    new_version="$(core_get_new_version)"
+  fi
+
+  if [[ "$old_version" == "$new_version" ]]; then
+    warn 'upgrades already performed'
+  fi
+
+  for file in "${_HEADSTART_UPGRADES_DIR-}/"*; do
+    if ! bash_compare_versions "${file##*/v}" "$old_version"; then
+      if bash_compare_versions "${file##*/v}" "$new_version"; then
+        . "$file"
+      fi
+    fi
+  done
+
+  local -a upgrade_functions
+  upgrade_functions=($(compgen -A function -X '!core_upgrade_[0-9]*' ||:))
+
+  if [[ "${#upgrade_functions[@]}" -eq 0 ]]; then
+    warn 'no updates to perform'
+    exit
+  fi
+
+  local notice
+  read -r -d '' notice <<'HERE' || :
+ _____                _             _ _
+|  __ \              | |      /\   | | |
+| |__) |___  __ _  __| |     /  \  | | |
+|  _  // _ \/ _` |/ _` |    / /\ \ | | |
+| | \ \  __/ (_| | (_| |   / ____ \| | |
+|_|  \_\___|\__,_|\__,_|  /_/    \_\_|_|
+
+
+                _               _   _
+               | |             | | | |
+     ___  _   _| |_ _ __  _   _| |_| |
+    / _ \| | | | __| '_ \| | | | __| |
+   | (_) | |_| | |_| |_) | |_| | |_|_|
+    \___/ \__,_|\__| .__/ \__,_|\__(_)
+                   | |
+                   |_|
+HERE
+
+  info "$notice"
+  sleep 3
+
+  local continue_from_function
+  if [[ -f "$PROJECT_DIR/.core_failed_upgrade" ]]; then
+    continue_from_function="$(<"$PROJECT_DIR/.core_failed_upgrade")"
+    rm -f "$PROJECT_DIR/.core_failed_upgrade"
+    rm -f "$PROJECT_DIR/.core_failed_upgrade_output"
+
+    upgrade_functions="${upgrade_functions[*]}"
+    upgrade_functions="${upgrade_functions#*$continue_from_function}"
+    upgrade_functions=( $continue_from_function$upgrade_functions )
+
+    warn "continuing from previously failed update $continue_from_function"
+    sleep 2
+    echo
+  fi
+
+  local new_body
+  for function in "${upgrade_functions[@]}"; do
+    new_func="$(
+      awk '{
+        if ( \
+          match($0, /^# @/) \
+        )
+        {
+          gsub(/^# @/, "");
+          print ": || return 1\n" $0 " &&"
+        }
+        else if ( \
+          $0=="" || \
+          match($0, /.*\(\).*/) || \
+          match($0, /^{/) || \
+          match($0, / {/) || \
+          match($0, /^#/) || \
+          match($0, /[[:space:]]#/) || \
+          match($0, /[[:space:]]*if .*/) || \
+          match($0, /[[:space:]]*then/) || \
+          match($0, /[[:space:]]*for .*/) || \
+          match($0, /[[:space:]]*while .*/) || \
+          match($0, /[[:space:]]*do$/) \
+        )
+        {print $0}
+        else if ( \
+          match($0, /[[:space:]]done/) || \
+          match($0, /[[:space:]]fi/) \
+        )
+        {
+          gsub(/;$/,"");
+          print ": || return 1\n" $0 " &&"
+        }
+        else if ( \
+          match($0, /[[:space:]]}/) || \
+          match($0, /^}/) \
+        )
+        { print ":\n" $0 }
+        else {
+          gsub(/;$/,"");
+          printf("%s %s", $0, " &&\n")
+        }
+      }' <<< "$(declare -f "$function")"
+    )"
+    eval "$new_func"
+    # <<-CODE-NOTE In order to have the `core_upgrade_XXXXXXXXXXXX_on_failure`
+    #              functions be triggered right when there is an error in an
+    #              update function, we would write sth like `$function && ec=0
+    #              || ec="$?"` in the for loop below. However, this is a
+    #              compound command and in Bash either `set -e` or the ERR trap
+    #              get disabled. This means that there is no way to do the
+    #              above. The alternative is to write the function bodies as a
+    #              long sequence of `&&` separated lines or end each line with
+    #              `|| return 1`. In the lines above, we do the first one.
+    #              Instead of requiring the upgrade functions to be writtenwith
+    #              `&&`, we add the `&&` on the fly.
+  done
+
+  for function in "${upgrade_functions[@]}"; do
+    local line
+    line="$(eval "echo running upgrade ${function#core_upgrade_}\${${function}_title+\ - \$${function}_title...}")"
+    info "$line"
+    echo
+
+    local upgrade_output
+
+    upgrade_output="$("$function" 2>&1)" && ec=0 || ec="$?"
+
+    if  [[ "$ec" -ne 0 ]]; then
+      echo -n "$function" >| "$PROJECT_DIR/.core_failed_upgrade"
+      echo "$upgrade_output" >| "$PROJECT_DIR/.core_failed_upgrade_output"
+
+      if [[ "$(type -t "${function}_on_failure")" == 'function' ]]; then
+        warn "rolling back update $function"
+        "${function}_on_failure"
+        if [[ -v "${function}_failure_message" ]]; then
+          declare -i num_chars
+          declare -i offby
+          declare -a header=()
+
+          num_chars="$(wc -c <<<"$function")"
+          offby="$(( (78-num_chars)/2-1))"
+          num_chars=num_chars+16
+          header+=("$(eval "printf '%0.s#' {0..$offby}")")
+          header+=("$function")
+          header+=("$(eval "printf '%0.s#' {0..$offby}")")
+
+          echo
+          info "${header[*]}" '' 'red'
+          echo -n "$UI_Color_Italics"
+          eval "info \"\${${function}_failure_message[*]}\" '' 'lightRed'"
+          info "$(printf '%0.s#' {0..78})" '' 'red'
+          echo
+        fi
+        abort "$function failed\n(type '$_HEADSTART_CMD cat .core_failed_upgrade_output' for more details)"
+      else
+        abort "$function failed\n(type '$_HEADSTART_CMD cat .core_failed_upgrade_output' for more details)"
+      fi
+    else
+      if [[ "$(type -t "${function}_on_success")" == 'function' ]]; then
+        "${function}_on_success"
+        if [[ -v "${function}_success_message" ]]; then
+          declare -i num_chars
+          declare -i offby
+          declare -a header=()
+
+          num_chars="$(wc -c <<<"$function")"
+          offby="$(( (78-num_chars)/2-1))"
+          num_chars=num_chars+16
+          header+=("$(eval "printf '%0.s#' {0..$offby}")")
+          header+=("$function")
+          header+=("$(eval "printf '%0.s#' {0..$offby}")")
+
+          echo
+          info "${header[*]}" '' 'blue'
+          echo -n "$UI_Color_Italics"
+          eval "info \"\${${function}_success_message[*]}\" '' lightYellow"
+          info "$(printf '%0.s#' {0..78})" '' 'blue'
+          echo
+        fi
+      fi
+    fi
+  done
+
+  sed -i "s/^version=.*$/version=$new_version/" "$_HEADSTART_CORE_LOCK"
+
+  info "successfully updated to version $new_version"
+}
+
+
+function core_upgrade() {
+  while [[ "$#" -gt 0 ]]; do
+    case "${1-}" in
+      -*)
+        abort "unrecognized option: $1" "$_HEADSTART_EC_USAGE"
+        ;;
+      *)
+        abort "unrecognized command: $1" "$_HEADSTART_EC_USAGE"
+        ;;
+    esac
+  done
+
+  core_upgrade_run_upgrades
+}
+
+
+core_upgrade "$@"
