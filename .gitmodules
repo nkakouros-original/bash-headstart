@@ -4,7 +4,8 @@
 	branch = stable
 [submodule "vendor/bash-infinity"]
 	path = vendor/bash-infinity
-	url = https://github.com/niieani/bash-oo-framework
+	url = https://github.com/tterranigma/bash-oo-framework
+	branch = stable
 [submodule "vendor/autohook"]
 	path = vendor/autohook
 	url = https://github.com/tterranigma/Autohook
