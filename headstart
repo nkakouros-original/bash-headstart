@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-
 declare -a args=("$@")
 shift "$#"
 

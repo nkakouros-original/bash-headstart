@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# TODO remove this script
 #
 # Update go-script-bash
 #
@@ -22,11 +23,11 @@ function devel_go_srcipt_update_update() {
   info "downloading stable branch"
 
   url='https://github.com/tterranigma/go-script-bash/archive/stable.zip'
-  wget -nd -q -O "$HEADSTART_TMP_DIR/go-script.zip" "$url"
+  wget -nd -q -O "$_HEADSTART_TMP_DIR/go-script.zip" "$url"
 
   info "extracting zip"
-  unzip -qq -o -d "$HEADSTART_TMP_DIR" "$HEADSTART_TMP_DIR/go-script.zip"
-  cp -r "$HEADSTART_TMP_DIR/go-script-bash-stable/"* "$HEADSTART_VENDOR_DIR/go-script-bash/"
+  unzip -qq -o -d "$_HEADSTART_TMP_DIR" "$_HEADSTART_TMP_DIR/go-script.zip"
+  cp -r "$_HEADSTART_TMP_DIR/go-script-bash-stable/"* "$_HEADSTART_VENDOR_DIR/go-script-bash/"
 
   info "go-script-bash updated"
 }

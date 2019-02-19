@@ -112,7 +112,7 @@ function abort() {
 
   if [[ "$message" != '' ]]; then
     COLUMNS=100 @go.printf \
-      "${UI_Color_Red}${UI_Color_Bold}Error: ${UI_Color_NoBold}%b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
+      "${UI_Color_Red}${UI_Color_Bold}error: ${UI_Color_NoBold}%b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
     # <<-CODE-NOTE: `COLUMNS` is set to 91 instead of 80 due to the no width
     #               color characters (we want to have 80 characters output).
   fi
@@ -163,4 +163,10 @@ function set_standard_outputs() {
     exec >/dev/null
     # we are not redirecting stderr, to show errors even without debugging enabled
   fi
+}
+
+
+function color_stderr() {
+  @required [string] command
+  "$@" 2> >(while read line; do echo -e "\e[01;31merror: $line\e[0m" >&2; done)
 }

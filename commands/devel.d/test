@@ -25,7 +25,7 @@
 # Passes all arguments through to `@go.bats_main` from
 # `scripts/vendor/go-script-bash/lib/bats-main`.
 _test_main() {
-  declare -x TMPDIR="$HEADSTART_TMP_DIR"
+  declare -x TMPDIR="$_HEADSTART_TMP_DIR"
   # <<-CODE_NOTE: This environment variable is read by Bats in order to set its
   #               own temp folder (BATS_TMPDIR variable). The BATS_TMPDIR
   #               variable is used then to set the variables
@@ -38,7 +38,7 @@ _test_main() {
 
   # drive the @go.bats_main script
   declare -x _GO_COVERALLS_URL=''
-  declare -x _GO_BATS_DIR="$HEADSTART_VENDOR_DIR/bats"
+  declare -x _GO_BATS_DIR="$_HEADSTART_VENDOR_DIR/bats"
   declare -x _GO_BATS_GLOB_ARGS=("scripts/tests/unit" '.bats')
   # <<-CODE_NOTE: The first argument is the path to search into, the second is
   #               the file extension to look for. The path has to not include
@@ -46,8 +46,8 @@ _test_main() {
   #               we declare it as relative here, knowing that it will not
   #               contain spaces this way.
   #
-  declare -x _GO_KCOV_DIR="$HEADSTART_TMP_DIR/kcov"
-  declare -x _GO_BATS_COVERAGE_DIR="$HEADSTART_TMP_DIR/coverage"
+  declare -x _GO_KCOV_DIR="$_HEADSTART_TMP_DIR/kcov"
+  declare -x _GO_BATS_COVERAGE_DIR="$_HEADSTART_TMP_DIR/coverage"
   declare -x _GO_COLLECT_BATS_COVERAGE=''
   # TODO see if these paths actually work
   declare -x _GO_BATS_COVERAGE_INCLUDE=('headstart' 'commands' 'lib')

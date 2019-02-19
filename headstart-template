@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+. "${0%/*}/path-to-bash-headstart/headstart-core.bash" "path/to/custom/commands"
+
+headstart "$@"

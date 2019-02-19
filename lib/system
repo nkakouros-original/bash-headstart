@@ -37,7 +37,7 @@ trap system_load_outro EXIT
 ## command in the scripts returns with a return code different to '0' (similar
 ## to 'set -e', but it does not stop execution). But this is problematic when
 ## doing TAB auto-completion in Bash. Then, the
-## '$HEADSTART_VENDOR_DIR/go-bash-script/libexec/complete' functions are called in an
+## '$_HEADSTART_VENDOR_DIR/go-bash-script/libexec/complete' functions are called in an
 ## execution sequence that includes 4, 5 commands that return 1 when there is no
 ## candidate for completion (eg 'headstart world f<TAB>') . This causes Bash
 ## Infinity to trigger exception handling and print execution stacks in the
@@ -60,6 +60,8 @@ function Exception::CustomCommandHandler() {
 
   if (( _GO_EC_BASE <= $exit_code && $exit_code <= _GO_EC_MAX )); then
     # go-script-bash exit codes
+    exit $exit_code
+  elif (( _HEADSTART_EC_BASE <= $exit_code && $exit_code <= _HEADSTART_EC_MAX )); then
     exit $exit_code
   elif [[ "$exit_code" == '126' ]]; then
     # TODO is this needed

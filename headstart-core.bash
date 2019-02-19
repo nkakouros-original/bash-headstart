@@ -36,6 +36,9 @@ cd "$PROJECT_DIR"
 . "$_HEADSTART_CORE_DIR/headstart-load-libs.bash" "$@" \
   "${_HEADSTART_CORE_DIR#$PROJECT_DIR/}/"{commands,}
 
+declare -gx _HEADSTART_TMP_DIR="${_HEADSTART_TMP_DIR-$PROJECT_DIR/.tmp}"
+declare -gx _HEADSTART_VENDOR_DIR="${_HEADSTART_CORE_DIR}/vendor"
+
 declare -gx _HEADSTART_CMD="${_GO_CMD##*/}"
 declare -gx _HEADSTART_PROJECT_CONFIG="$PROJECT_DIR/project.conf"
 declare -gx _HEADSTART_CORE_LOCK="$PROJECT_DIR/.core.lock"
@@ -93,7 +96,7 @@ function headstart() {
   fi
   unset go_early
 
-  . "$_GO_USE_MODULES" 'core' 'aliases' 'project'
+  . "$_GO_USE_MODULES" 'core' 'aliases' 'project' 'system'
 
   set_standard_outputs
   set_trace "$debug"
@@ -128,7 +131,7 @@ function headstart() {
   core_check_upgrades
 
   if [[ "$print_help" == 'true' ]]; then
-    "$_HEADSTART_CMD" help "${rest[@]}"
+    @go help "${rest[@]}"
     return
   fi
 
