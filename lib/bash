@@ -442,33 +442,46 @@ function bash_array_asymmetric_diff()  {
     return "$_HEADSTART_EC_ARGERR"
   fi
 
+  # Copy __array1 so that unsetting its elements does not affect loops later
   local element
-  local -a __tmp_array=()
+  local -a __tmp_array1=()
   for element in $(eval "echo \"\${$__array1[*]}\""); do
-    __tmp_array+=( "$element" )
+    __tmp_array1+=( "$element" )
   done
 
-  eval "declare -ag ${__return_array}=()"
-  for element in "${__tmp_array[@]}"; do
-    eval "${__return_array}+=(\"$element\")"
+  # Copy __array2 so that if __return_array is the same as __array2 we don't
+  # mess with __array2's items
+  local -a __tmp_array2=()
+  for element in $(eval "echo \"\${$__array2[*]}\""); do
+    __tmp_array2+=( "$element" )
   done
+
+  # If __return_array is the same as __array1 no need to populate it with
+  # __array1's items
+  if [[ "$__return_array" != "$__array1" ]]; then
+    unset "$__return_array"
+    eval "declare -ag ${__return_array}=()"
+    for element in "${__tmp_array1[@]}"; do
+      eval "${__return_array}+=(\"$element\")"
+    done
+  fi
 
   # Check if arrays are empty
-  if [[ "$(declare -p "$__array1")" =~ $__array1$|\(\)$ ||
-        "$(declare -p "$__array2")" =~ $__array2$|\(\)$ ]]; then
+  if [[ "$(declare -p __tmp_array1)" =~ __tmp_array1$|\(\)$ ||
+        "$(declare -p __tmp_array2)" =~ __tmp_array2$|\(\)$ ]]; then
     return
   fi
 
-  # shellcheck disable=SC1087
-  __array2="$__array2[*]"
-
   local -i i=0
-  for element in "${__tmp_array[@]}"; do
-    if [[ " ${!__array2} " == *" $element "* ]]; then
+  for element in "${__tmp_array1[@]}"; do
+    if [[ " ${__tmp_array2[*]} " == *" $element "* ]]; then
       unset "$__return_array[i]"
     fi
     i+=1
   done
+
+  unset __tmp_array1
+  unset __tmp_array2
 }
 
 
