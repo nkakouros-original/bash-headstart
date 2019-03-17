@@ -25,7 +25,6 @@
 #   Re-run bootstrap:
 #     {{go}} {{cmd}} --force
 
-
 # TODO add version checks
 # TODO inform about sudo
 # TODO install hydra, msfconsole, etc only if devel
@@ -46,7 +45,6 @@ function core_bootstrap_install_command() {
   sudo su -c "echo $command >> /etc/profile.d/$_HEADSTART_CMD.sh"
 }
 
-
 function core_bootstrap_install_dependencies() {
   . "$_GO_USE_MODULES" 'platform'
 
@@ -56,7 +54,6 @@ function core_bootstrap_install_dependencies() {
     . "$path"
   fi
 }
-
 
 function core_bootstrap_ask_passphrase() {
   . "$_GO_USE_MODULES" 'prompt'
@@ -81,11 +78,10 @@ function core_bootstrap_ask_passphrase() {
   fi
 }
 
-
 function core_bootstrap_git_submodules() {
   info "Initializing git submodules"
 
-  ssh-keyscan github.com >> ~/.ssh/known_hosts
+  ssh-keyscan github.com >>~/.ssh/known_hosts
   # <<-CODE-NOTE We are adding the signature of the public key of github.com to
   #              the known hosts to avoid interactive prompts during git
   #              operations asking whether we accept/trust the key.
@@ -116,23 +112,22 @@ function core_bootstrap_git_submodules() {
 
     current_branch="$(git branch | grep '*' | cut -d' ' -f2)"
 
-    git branch -r |
-      grep -v '\->' |
-      grep origin |
-      while read branch; do
+    git branch -r \
+      | grep -v '\->' \
+      | grep origin \
+      | while read branch; do
         echo "$module $branch"
         if [[ "${branch#origin/}" != "$current_branch" ]]; then
           git branch -f --track "${branch#origin/}" "$branch"
         fi
       done
-  # why .gitmirrors? Rethink what I do with remotes, branches, etc
-  done <<< "$(grep -v '^#' "$PROJECT_DIR/.gitmirrors" | grep -v '^$')"
+    # why .gitmirrors? Rethink what I do with remotes, branches, etc
+  done <<<"$(grep -v '^#' "$PROJECT_DIR/.gitmirrors" | grep -v '^$')"
 
   cd "$PROJECT_DIR" || return 1
 
   info "-> Submodules initialized!"
 }
-
 
 function core_bootstrap_git_collab() {
   # <<-CODE-NOTE Here we add mirrors to the main git project. While we develop
@@ -148,13 +143,12 @@ function core_bootstrap_git_collab() {
       if [[ "$repo" == "" ]]; then
         continue
       fi
-      if ! grep "$remote" > /dev/null <<< "$(git remote)"; then
+      if ! grep "$remote" >/dev/null <<<"$(git remote)"; then
         git remote add "$remote" "$repo"
       fi
-    done <<< "$(grep -v '^#' "$PROJECT_DIR/.gitcollab" | grep -v '^$')"
+    done <<<"$(grep -v '^#' "$PROJECT_DIR/.gitcollab" | grep -v '^$')"
   fi
 }
-
 
 function core_bootstrap_git_upstream() {
   # <<-CODE-NOTE Some of the 3rd party projects we are using needed to be
@@ -169,7 +163,7 @@ function core_bootstrap_git_upstream() {
   #              these upstream repo urls in the .gitupstreams file. Here, we
   #              add them us the `upstream` remote to gitmodules.
 
-  if  [[ ! -e "$PROJECT_DIR/.gitupstreams" ]]; then
+  if [[ ! -e "$PROJECT_DIR/.gitupstreams" ]]; then
     return
   fi
 
@@ -181,14 +175,13 @@ function core_bootstrap_git_upstream() {
     cd "$PROJECT_DIR/$folder" || exit 1
 
     remotes="$(git remote)"
-    if ! grep "upstream" > /dev/null <<< "$remotes"; then
-      git remote add upstream "$remote";
+    if ! grep "upstream" >/dev/null <<<"$remotes"; then
+      git remote add upstream "$remote"
     fi
-  done <<< "$( grep -v '^#' "$PROJECT_DIR/.gitupstreams" | grep -v '^$')"
+  done <<<"$(grep -v '^#' "$PROJECT_DIR/.gitupstreams" | grep -v '^$')"
 
   cd "$PROJECT_DIR" || exit 1
 }
-
 
 function core_bootstrap_git_kth() {
   # <<-CODE-NOTE There is some code we have written for the project that we
@@ -216,26 +209,25 @@ function core_bootstrap_git_kth() {
 
     # Check if kth remote has already been added as a remote. If not, add it.
     remotes="$(git remote)"
-    if ! grep "kth" > /dev/null <<< "$remotes"; then
-      git remote add "kth" "$mirror";
+    if ! grep "kth" >/dev/null <<<"$remotes"; then
+      git remote add "kth" "$mirror"
       mirrored=true
     fi
-  done <<< "$(grep -v '^#' "$PROJECT_DIR/.gitmirrors" | grep -v '^$')"
+  done <<<"$(grep -v '^#' "$PROJECT_DIR/.gitmirrors" | grep -v '^$')"
 
   cd "$PROJECT_DIR" || exit 1
 }
 
-
 function core_bootstrap_git_checkout_stable() {
-  modules="$( \
-    sed -E 's/\[submodule "([^"]*)\"]/\1/' "$PROJECT_DIR/.gitmodules" |
-    grep -vE "^\s" \
+  modules="$(
+    sed -E 's/\[submodule "([^"]*)\"]/\1/' "$PROJECT_DIR/.gitmodules" \
+      | grep -vE "^\s"
   )"
 
   for module in $modules; do
     folder="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep path)"
     folder="${folder#*path = }"
-    branch="$( grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep "branch =")"
+    branch="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep "branch =")"
     branch="${branch#*branch = }"
 
     cd "$PROJECT_DIR/$folder" || exit 1
@@ -254,7 +246,6 @@ function core_bootstrap_git_checkout_stable() {
   cd "$PROJECT_DIR" || exit 1
 }
 
-
 function core_bootstrap_git_hooks() {
   info "Installing git hooks"
 
@@ -268,19 +259,17 @@ function core_bootstrap_git_hooks() {
   sudo su -c "$cmd"
 }
 
-
 function core_bootstrap_set_version() {
   if [[ ! -e "$_HEADSTART_CORE_LOCK" ]]; then
-    :>| "$_HEADSTART_CORE_LOCK"
+    : >|"$_HEADSTART_CORE_LOCK"
   fi
 
   while read -s line; do
     if [[ "$line" =~ ^version=.* ]]; then
-      echo "${BASH_REMATCH[0]}" > "$_HEADSTART_CORE_LOCK"
+      echo "${BASH_REMATCH[0]}" >"$_HEADSTART_CORE_LOCK"
     fi
-  done < "$PROJECT_DIR/version"
+  done <"$PROJECT_DIR/version"
 }
-
 
 # TODO do this generic, load prompts from conf file
 function core_bootstrap_configure() {
@@ -300,16 +289,16 @@ function core_bootstrap_configure() {
       return
     fi
 
-    [[ "$(< "$_HEADSTART_PROJECT_CONFIG")" =~ project\ =\ ([^[:space:]]+) ]]
+    [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ project\ =\ ([^[:space:]]+) ]]
     old_project="${BASH_REMATCH[1]}"
     project_prompt="ID of Google Cloud project (old value is default): "
 
-    [[ "$(< "$_HEADSTART_PROJECT_CONFIG")" =~ world_reuse\ =\ ([^[:space:]]+) ]]
+    [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ world_reuse\ =\ ([^[:space:]]+) ]]
     old_reuse="${BASH_REMATCH[1]}"
     reuse_prompt="players per world (old value is default): "
   fi
 
-  echo '[default]' >| "$PROJECT_DIR/project.conf"
+  echo '[default]' >|"$PROJECT_DIR/project.conf"
 
   project_prompt="${project_prompt-ID of Google Cloud project: }"
   local project=''
@@ -319,7 +308,7 @@ function core_bootstrap_configure() {
     "${old_project-}" \
     '' "${old_project:-required}"
 
-  echo "project = $project" >> "$PROJECT_DIR/project.conf"
+  echo "project = $project" >>"$PROJECT_DIR/project.conf"
 
   reuse_prompt="${reuse_prompt-players per world: }"
   local world_reuse=''
@@ -331,14 +320,12 @@ function core_bootstrap_configure() {
       '' "${old_reuse:-required}"
   done
 
-  echo "world_reuse = $world_reuse" >> "$_HEADSTART_PROJECT_CONFIG"
+  echo "world_reuse = $world_reuse" >>"$_HEADSTART_PROJECT_CONFIG"
 }
-
 
 function core_bootstrap_lock() {
-  echo "status=bootstrapped" >> "$_HEADSTART_CORE_LOCK"
+  echo "status=bootstrapped" >>"$_HEADSTART_CORE_LOCK"
 }
-
 
 function core_bootstrap() {
   local force=false
@@ -346,7 +333,7 @@ function core_bootstrap() {
 
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
-      --force|-f)
+      --force | -f)
         force=true
         ;;
       --noconfirm)
@@ -395,6 +382,4 @@ function core_bootstrap() {
   info 'bootstrap complete'
 }
 
-
 core_bootstrap "$@"
-

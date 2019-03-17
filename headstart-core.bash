@@ -16,21 +16,21 @@ declare -r -x _HEADSTART_CORE_DIR="$PWD"
 
 cd "$PROJECT_DIR"
 # if [[ -v HEADSTART_INSTALLATION_DIR ]]; then
-  # TODO make sure this variable is during 'headstart env'
-  # pushd "$HEADSTART_INSTALLATION_DIR" >/dev/null || exit 1
+# TODO make sure this variable is during 'headstart env'
+# pushd "$HEADSTART_INSTALLATION_DIR" >/dev/null || exit 1
 # fi
 
 # TODO see if this needed once I turn everything into git modules
 # . "$_HEADSTART_CORE_DIR/lib/installation"
 
 # if [[ ! -v HEADSTART_INSTALLATION_DIR ]]; then
-  # installation_install >&2
-  # <<-CODE_NOTE We are redirecting output to stderr because when running
-  #             `eval "$(./headstart env -)"` when first installing the project,
-  #             the above script will run and output from it will cause eval to
-  #             print errors that the commands like 'Downloading' and 'Download'
-  #             do not exist. By redirecting to stderr, we do not have this
-  #             problem.
+# installation_install >&2
+# <<-CODE_NOTE We are redirecting output to stderr because when running
+#             `eval "$(./headstart env -)"` when first installing the project,
+#             the above script will run and output from it will cause eval to
+#             print errors that the commands like 'Downloading' and 'Download'
+#             do not exist. By redirecting to stderr, we do not have this
+#             problem.
 # fi
 
 . "$_HEADSTART_CORE_DIR/headstart-load-libs.bash" "$@" \
@@ -53,21 +53,21 @@ function headstart() {
 
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
-      -d|--debug)
+      -d | --debug)
         debug=true
         ;;
       -v*)
         verbosity="${1#-}"
         ;;
-      --version|-V)
+      --version | -V)
         print_version=true
         ;;
-      --help|-h)
+      --help | -h)
         print_help=true
         ;;
-      complete|env)
-      # <<-CODE_NOTE: This is matched when autocompletion occurs or when using
-      #               `eval "$(./headstart env -)"`
+      complete | env)
+        # <<-CODE_NOTE: This is matched when autocompletion occurs or when using
+        #               `eval "$(./headstart env -)"`
         go_early=true
         rest+=("$1")
         ;;
@@ -115,8 +115,7 @@ function headstart() {
     if [[ "${rest[*]}" == 'help core bootstrap' ]]; then
       @go "${rest[@]}"
       return
-    elif [[ "${rest[*]}" =~ ^core\ bootstrap$ && "$print_help" == 'true' ]];
-    then
+    elif [[ "${rest[*]}" =~ ^core\ bootstrap$ && "$print_help" == 'true' ]]; then
       @go help "${rest[@]}"
       return
     elif [[ "${rest[*]}" =~ ^core\ bootstrap\ *$ ]]; then
@@ -147,8 +146,8 @@ function headstart() {
   GCE_PROJECT_NAME="$(project_get_gce_project)"
   WORLD_REUSE="$(project_get_world_reuse)"
 
-  if [[ "${rest[@]}" != '' && "${rest[0]}" == 'core' ]]; then
-    if [[ "${#rest[@]}" -ge 2 && "${rest[1]}" == 'bootstrap' ]]; then
+  if [[ "${rest[*]}" != '' && "${rest[0]}" == 'core' ]]; then
+    if [[ "${#rest[*]}" -ge 2 && "${rest[1]}" == 'bootstrap' ]]; then
       @go "${rest[@]}"
       return
     fi
@@ -156,4 +155,3 @@ function headstart() {
 
   @go "${rest[@]}"
 }
-
