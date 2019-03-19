@@ -48,10 +48,19 @@ function core_bootstrap_install_command() {
 function core_bootstrap_install_dependencies() {
   . "$_GO_USE_MODULES" 'platform'
 
+  info 'installing dependencies...'
+
   local path
   path="$_HEADSTART_CORE_DIR/commands/core.d/bootstrap.d/$_GO_PLATFORM_ID.sh"
   if [[ -f "$path" ]]; then
     . "$path"
+  fi
+}
+
+function core_bootstrap_git_lay() {
+  if [[ -e "$PROJECT_DIR/gilt.yml" ]]; then
+    info 'layering dependencies with gilt...'
+    gilt --config "$PROJECT_DIR/gilt.yml" overlay
   fi
 }
 
@@ -76,174 +85,6 @@ function core_bootstrap_ask_passphrase() {
   if [[ "$kth_github_key" != "$github_com_key" ]]; then
     ssh-add "$kth_github_key"
   fi
-}
-
-function core_bootstrap_git_submodules() {
-  info "Initializing git submodules"
-
-  ssh-keyscan github.com >>~/.ssh/known_hosts
-  # <<-CODE-NOTE We are adding the signature of the public key of github.com to
-  #              the known hosts to avoid interactive prompts during git
-  #              operations asking whether we accept/trust the key.
-
-  git submodule update --init --recursive --remote
-
-  if [[ ! -e "$PROJECT_DIR/.gitmirrors" ]]; then
-    return
-  fi
-
-  # <<-CODE-NOTE At this point, git knows about the branches that exist on the
-  #              remotes. But, there are no local branches other than master
-  #              (which tracks the origin/master branch). This is inconvenient.
-  #              If at this point we give `git branch`, only "master" will be
-  #              returned (we will have to give `git branch -r/-a` to see the
-  #              remote/all branches). Similarly if we try to `git push -all`,
-  #              only master will be pushed as it is the only local branch.
-  #              Here, we set up local branches with the same name as the
-  #              remote branches on "origin" and we set them to track those
-  #              remote branches.
-  while IFS=, read module mirror; do
-    # TODO make some of these actions lib functions, the
-    # Find the folder in the project where the module lies in.
-    folder="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep path)"
-    folder="${folder#*path = }"
-
-    cd "$PROJECT_DIR/$folder" || exit 1
-
-    current_branch="$(git branch | grep '*' | cut -d' ' -f2)"
-
-    git branch -r \
-      | grep -v '\->' \
-      | grep origin \
-      | while read branch; do
-        echo "$module $branch"
-        if [[ "${branch#origin/}" != "$current_branch" ]]; then
-          git branch -f --track "${branch#origin/}" "$branch"
-        fi
-      done
-    # why .gitmirrors? Rethink what I do with remotes, branches, etc
-  done <<<"$(grep -v '^#' "$PROJECT_DIR/.gitmirrors" | grep -v '^$')"
-
-  cd "$PROJECT_DIR" || return 1
-
-  info "-> Submodules initialized!"
-}
-
-function core_bootstrap_git_collab() {
-  # <<-CODE-NOTE Here we add mirrors to the main git project. While we develop
-  #              this project for the EN2720 Ethical Hacking course, there are
-  #              many occasions when we need to share the code with others on
-  #              other git repos than the main KTH github one. See .gitcollab
-  #              for a list of these repos.
-
-  if [[ -e "$PROJECT_DIR/.gitcollab" ]]; then
-    while IFS=, read remote repo branch; do
-      # If .gitcollab has no repos, the `while` loop will still run once creating
-      # a faulty pre-push
-      if [[ "$repo" == "" ]]; then
-        continue
-      fi
-      if ! grep "$remote" >/dev/null <<<"$(git remote)"; then
-        git remote add "$remote" "$repo"
-      fi
-    done <<<"$(grep -v '^#' "$PROJECT_DIR/.gitcollab" | grep -v '^$')"
-  fi
-}
-
-function core_bootstrap_git_upstream() {
-  # <<-CODE-NOTE Some of the 3rd party projects we are using needed to be
-  #              patched to match our requirements. We cloned them and created
-  #              patched versions. We did pull requests to the original
-  #              projects. But until those pull requests get accepted (if ever),
-  #              we need to pull the patched versions from our own repos.  So,
-  #              we have added these projects as git submodules to be pulled
-  #              from our own, personal, FOSS repos. Yet, for development
-  #              purposes it is convenient to also keep track of the upstream
-  #              repos, so that if we can pull new features. We keep track of
-  #              these upstream repo urls in the .gitupstreams file. Here, we
-  #              add them us the `upstream` remote to gitmodules.
-
-  if [[ ! -e "$PROJECT_DIR/.gitupstreams" ]]; then
-    return
-  fi
-
-  while IFS=, read module remote; do
-    # Find the folder in the project where the module lies in.
-    folder="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep path)"
-    folder="${folder#*path = }"
-
-    cd "$PROJECT_DIR/$folder" || exit 1
-
-    remotes="$(git remote)"
-    if ! grep "upstream" >/dev/null <<<"$remotes"; then
-      git remote add upstream "$remote"
-    fi
-  done <<<"$(grep -v '^#' "$PROJECT_DIR/.gitupstreams" | grep -v '^$')"
-
-  cd "$PROJECT_DIR" || exit 1
-}
-
-function core_bootstrap_git_kth() {
-  # <<-CODE-NOTE There is some code we have written for the project that we
-  #              want to make publicly available as a FOSS contribution. To
-  #              make this code public we have to host it somewhere other than
-  #              KTH github as it is locked down. Thus, we are offering the
-  #              code on our own personal, open repositories on github.com. But
-  #              this is risky for the project as people come and go in the
-  #              project and those repositories might not always be available.
-  #              Thus, we mirror everything back to KTH github. Other than our
-  #              FOSS contributions, we also need to mirror our patched
-  #              versions of upstream projects for the same reasons. Here, we
-  #              are adding these mirror KTH github repositories.
-
-  if [[ ! -e "$PROJECT_DIR/.gitmirrors" ]]; then
-    return
-  fi
-
-  while IFS=, read module mirror; do
-    # Find the folder in the project where the module lies in.
-    folder="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep path)"
-    folder="${folder#*path = }"
-
-    cd "$PROJECT_DIR/$folder" || exit 1
-
-    # Check if kth remote has already been added as a remote. If not, add it.
-    remotes="$(git remote)"
-    if ! grep "kth" >/dev/null <<<"$remotes"; then
-      git remote add "kth" "$mirror"
-      mirrored=true
-    fi
-  done <<<"$(grep -v '^#' "$PROJECT_DIR/.gitmirrors" | grep -v '^$')"
-
-  cd "$PROJECT_DIR" || exit 1
-}
-
-function core_bootstrap_git_checkout_stable() {
-  modules="$(
-    sed -E 's/\[submodule "([^"]*)\"]/\1/' "$PROJECT_DIR/.gitmodules" \
-      | grep -vE "^\s"
-  )"
-
-  for module in $modules; do
-    folder="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep path)"
-    folder="${folder#*path = }"
-    branch="$(grep -A 4 -m 1 "$module" "$PROJECT_DIR/.gitmodules" | grep "branch =")"
-    branch="${branch#*branch = }"
-
-    cd "$PROJECT_DIR/$folder" || exit 1
-
-    # When we pulled git modules in core_bootstrap_git_modules, git checked out
-    # the last commit in the branch that we have setup for each submodule and
-    # not the branch itself. Thus, these repos are in `DETACHED HEAD mode`.
-    # This is inconvenient. Here, we checkout the defined branches themselves.
-    if [[ "$branch" == "" ]]; then
-      continue
-    fi
-
-    git checkout "$branch"
-  done
-
-  cd "$PROJECT_DIR" || exit 1
 }
 
 function core_bootstrap_git_hooks() {
@@ -364,11 +205,7 @@ function core_bootstrap() {
   core_bootstrap_git_hooks
   core_bootstrap_install_dependencies
   # TODO unify git functions
-  core_bootstrap_git_submodules
-  core_bootstrap_git_collab
-  core_bootstrap_git_upstream
-  core_bootstrap_git_kth
-  core_bootstrap_git_checkout_stable
+  core_bootstrap_git_lay
 
   local project_bootstrap_function="${_HEADSTART_CMD}_bootstrap"
   if [[ "$(type -t "$project_bootstrap_function")" == 'function' ]]; then

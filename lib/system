@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 
-set -o nounset            # emits error if an undefined variable is used
-set -o pipefail           # emits error if a command in a pipe chain fails
-shopt -s expand_aliases   # allows the use of aliases in scripts
-shopt -s extglob          # enables extended globbing, eg "@(aa|bb)"
+set -o nounset          # emits error if an undefined variable is used
+set -o pipefail         # emits error if a command in a pipe chain fails
+shopt -s expand_aliases # allows the use of aliases in scripts
+shopt -s extglob        # enables extended globbing, eg "@(aa|bb)"
 
 ## @fn system_load_outro()
 ## @brief Loads the outro script
@@ -18,7 +18,7 @@ function system_load_outro() {
 
   # Not really needed
   # if [[ -v HEADSTART_INSTALLATION_DIR ]]; then
-    # cd "$(dirs -l -0)" >/dev/null || exit 1
+  # cd "$(dirs -l -0)" >/dev/null || exit 1
   # fi
 
   # TODO the following always exits with 00
@@ -50,6 +50,10 @@ trap system_load_outro EXIT
 function Exception::CustomCommandHandler() {
   [integer] exit_code=1
 
+  if [[ "${_HEADSTART_ERROR_TRACE-}" == 'false' ]]; then
+    return
+  fi
+
   # FOR tests
   if [[ "${_GO_BATS_DIR-}" != '' ]]; then
     if [[ "${e-}" != '' ]]; then
@@ -58,10 +62,10 @@ function Exception::CustomCommandHandler() {
     exit $exit_code
   fi
 
-  if (( _GO_EC_BASE <= $exit_code && $exit_code <= _GO_EC_MAX )); then
+  if ((_GO_EC_BASE <= $exit_code && $exit_code <= _GO_EC_MAX)); then
     # go-script-bash exit codes
     exit $exit_code
-  elif (( _HEADSTART_EC_BASE <= $exit_code && $exit_code <= _HEADSTART_EC_MAX )); then
+  elif ((_HEADSTART_EC_BASE <= $exit_code && $exit_code <= _HEADSTART_EC_MAX)); then
     exit $exit_code
   elif [[ "$exit_code" == '126' ]]; then
     # TODO is this needed
