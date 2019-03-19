@@ -6,14 +6,12 @@ if [[ "$(($(date +%s) % 5))" -ne 0 ]]; then
   exit
 fi
 
-while IFS=$',' read -r path && read -r url && { read -r separator || :; } do
-  path="${path#*path = }"
-  url="${url#*url = }"
-
-  # TODO remove this
-  if [[ "$url" =~ bats ]]; then
-    continue
-  fi
+while read -r url \
+  && read -r version \
+  && read -r path \
+  && read -r grep_separator; do
+  path="${path#*dst: }"
+  url="${url#*git: }"
 
   cd "$old_dir/$path" || exit 1
 
@@ -21,6 +19,6 @@ while IFS=$',' read -r path && read -r url && { read -r separator || :; } do
     echo -e "\033[0;33mPushing to origin: $url\033[0m"
     git push "origin" --all
   fi
-done <<< "$(grep -A1 path .gitmodules)"
+done <<<"$(grep -A2 -- '- git:' gilt.yml)"
 
 cd "$old_dir" || exit 1
