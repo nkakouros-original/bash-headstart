@@ -9,7 +9,7 @@ distro_packages+=(
 
 pip_packages+=(
   # 'python-gilt'
-  'git+git://github.com/tterranigma/gilt@remotes'
+  'git+git://github.com/tterranigma/gilt@all'
 )
 
 info "checking required tools and libraries..."
