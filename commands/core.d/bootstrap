@@ -33,7 +33,7 @@ function core_bootstrap_install_command() {
   local command
   command=" \
     cd '\"'$PWD'\"' \&\& \
-    eval '\"'\$\('\"$PWD/headstart\"' env $_HEADSTART_CMD\)'\"' \
+    eval '\"'\$\('\"$PWD/${0##*/}\"' env $_HEADSTART_CMD\)'\"' \
     \&\& cd - \
     \>/dev/null"
 
