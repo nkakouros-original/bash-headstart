@@ -12,6 +12,8 @@ pip_packages+=(
   'git+git://github.com/tterranigma/gilt@all'
 )
 
+sudo apt update
+
 info "checking required tools and libraries..."
 
 $distro_pacman "${distro_packages[@]}"
