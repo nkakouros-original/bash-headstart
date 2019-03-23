@@ -9,8 +9,8 @@ distro_packages+=(
 
 pip_packages+=(
   # 'python-gilt'
-  'git+git://github.com/tterranigma/gilt@all'
   'git+git://github.com/retr0h/git-url-parse@1.1'
+  'git+git://github.com/tterranigma/gilt@all'
 )
 
 sudo apt update
