@@ -58,8 +58,13 @@ function core_bootstrap_install_dependencies() {
 }
 
 function core_bootstrap_git_lay() {
-  if [[ -e "$PROJECT_DIR/gilt.yml" ]]; then
-    info 'layering dependencies with gilt...'
+  . "$_GO_USE_MODULES" 'project'
+  local user_role="$(project_get_user_role)"
+
+  info 'layering dependencies with gilt...'
+  if [[ -e "$PROJECT_DIR/gilt.$user_role.yml" ]]; then
+    gilt --config "$PROJECT_DIR/gilt.$user_role.yml" overlay
+  elif [[ -e "$PROJECT_DIR/gilt.yml" ]]; then
     gilt --config "$PROJECT_DIR/gilt.yml" overlay
   fi
 }
@@ -162,6 +167,16 @@ function core_bootstrap_configure() {
   done
 
   echo "world_reuse = $world_reuse" >>"$_HEADSTART_PROJECT_CONFIG"
+
+  # TODO do not hardcode this
+  echo 'overlord_email = nkak@kth.se' >>"$_HEADSTART_PROJECT_CONFIG"
+
+  . "$_GO_USE_MODULES" 'prompt'
+
+  info "Select your role in the project:"
+  local PS3='Select role: '
+  @go.select_option 'user_role' 'developer' 'TA'
+  echo "role = $user_role" >>"$_HEADSTART_PROJECT_CONFIG"
 }
 
 function core_bootstrap_lock() {
