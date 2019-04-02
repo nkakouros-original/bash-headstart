@@ -21,6 +21,7 @@ function core_get_installed_version() {
       version_minor="${BASH_REMATCH[2]}"
       version_patch="${BASH_REMATCH[3]}"
       version="$version_major.$version_minor.$version_patch"
+      break
     fi
   done <"$_HEADSTART_CORE_LOCK"
 }

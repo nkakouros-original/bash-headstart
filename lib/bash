@@ -20,7 +20,6 @@
 ## Function parameters in this file are not processed using Bash Infinity to
 ## allow potentially contributing this file back to upstream projects.
 
-
 ## @fn bash_associative_array_join()
 ## @brief Joins two associative arrays into one
 ## @param array_one_1 ***string*** The name of the first associative array
@@ -77,7 +76,6 @@ function bash_associative_array_join() {
   eval "declare -Ag $name="${array_both_string#*=}
 }
 
-
 # TODO add tests for separator
 ## @fn bash_array_concatenate()
 ## @brief Converts an array to a comma-separated string
@@ -108,7 +106,6 @@ function bash_array_concatenate() {
 
   printf "$(bash_string_join "$separator" "${!array_one_1}")"
 }
-
 
 ## @fn bash_array_map()
 ## @brief Runs a function on each element of an array and returns the result
@@ -171,7 +168,6 @@ function bash_array_map() {
   declare -ag $array_one_1
   eval "$array_one_1=("${new_array[@]}")"
 }
-
 
 ## @fn bash_array_keep_unique()
 ## @brief Keeps only unique items in an array
@@ -244,7 +240,7 @@ bash_string_escape_regex() {
 
   local i
   local char
-  for ((i=0; i<${#characters}; i++)); do
+  for ((i = 0; i < ${#characters}; i++)); do
     char="${characters:$i:1}"
     if [[ "$char" == '\' ]]; then
       string="${string//\\/\\\\}"
@@ -257,7 +253,6 @@ bash_string_escape_regex() {
 
   echo "$string"
 }
-
 
 ## TODO add tests
 ## @fn bash_array_to_string
@@ -289,7 +284,6 @@ function bash_array_to_string() {
   echo "${array// /$delimiter}"
 }
 
-
 ## TODO add tests
 ## @fn bash_trim
 ## @brief Trims whitespace from the beginning and ending of strings
@@ -303,7 +297,6 @@ function bash_trim() {
 
   echo "$string"
 }
-
 
 ## TODO add tests
 ## @fn bash_array_sort
@@ -348,23 +341,23 @@ function bash_array_sort() {
   qsort_ret=("${!array_one_1-}")
 
   while ((${#stack[@]})); do
-     beg="${stack[0]}"
-     end="${stack[1]}"
-     stack=( "${stack[@]:2}" )
-     smaller=()
-     larger=()
-     pivot="${qsort_ret[beg]}"
+    beg="${stack[0]}"
+    end="${stack[1]}"
+    stack=("${stack[@]:2}")
+    smaller=()
+    larger=()
+    pivot="${qsort_ret[beg]}"
 
-     for (( i=beg+1; i<=end; ++i )); do
-        if "$compare_function" "${qsort_ret[i]}" "$pivot"; then
-           smaller+=( "${qsort_ret[i]}" )
-        else
-           larger+=( "${qsort_ret[i]}" )
-        fi
-     done
-     qsort_ret=( "${qsort_ret[@]:0:beg}" "${smaller[@]}" "$pivot" "${larger[@]}" "${qsort_ret[@]:end+1}" )
-     if ((${#smaller[@]}>=2)); then stack+=( "$beg" "$((beg+${#smaller[@]}-1))" ); fi
-     if ((${#larger[@]}>=2)); then stack+=( "$((end-${#larger[@]}+1))" "$end" ); fi
+    for ((i = beg + 1; i <= end; ++i)); do
+      if "$compare_function" "${qsort_ret[i]}" "$pivot"; then
+        smaller+=("${qsort_ret[i]}")
+      else
+        larger+=("${qsort_ret[i]}")
+      fi
+    done
+    qsort_ret=("${qsort_ret[@]:0:beg}" "${smaller[@]}" "$pivot" "${larger[@]}" "${qsort_ret[@]:end+1}")
+    if ((${#smaller[@]} >= 2)); then stack+=("$beg" "$((beg + ${#smaller[@]} - 1))"); fi
+    if ((${#larger[@]} >= 2)); then stack+=("$((end - ${#larger[@]} + 1))" "$end"); fi
   done
 
   array_one_1="${array_one_1%\[@\]}"
@@ -372,11 +365,9 @@ function bash_array_sort() {
   eval "${array_one_1}=( "${qsort_ret[@]}" )"
 }
 
-
 function bash_compare_strings() {
   [[ "${1-}" < "${2-}" ]]
 }
-
 
 ## fn bash_compare_versions()
 ## @brief compares two (semantic) versions strings
@@ -393,11 +384,11 @@ function bash_compare_versions() {
   local -a ver2=($2)
 
   # fill empty fields in ver1 with zeros
-  for ((i=${#ver1[@]}; i<${#ver2[@]}; i++)); do
+  for ((i = ${#ver1[@]}; i < ${#ver2[@]}; i++)); do
     ver1[i]=0
   done
 
-  for ((i=0; i<${#ver1[@]}; i++)); do
+  for ((i = 0; i < ${#ver1[@]}; i++)); do
     if [[ -z "${ver2[i]}" ]]; then
       # fill empty fields in ver2 with zeros
       ver2[i]=0
@@ -421,7 +412,7 @@ function bash_compare_versions() {
 ## @param __return_array ***strin*** the name of the global array to return
 ## @return ***global array*** *__return_array* containing *__array1* without
 ## the elements of *__array2*
-function bash_array_asymmetric_diff()  {
+function bash_array_asymmetric_diff() {
   local __array1="${1-}"
   local __array2="${2-}"
   local __return_array="${3-asymmetric_diff}"
@@ -446,14 +437,14 @@ function bash_array_asymmetric_diff()  {
   local element
   local -a __tmp_array1=()
   for element in $(eval "echo \"\${$__array1[*]}\""); do
-    __tmp_array1+=( "$element" )
+    __tmp_array1+=("$element")
   done
 
   # Copy __array2 so that if __return_array is the same as __array2 we don't
   # mess with __array2's items
   local -a __tmp_array2=()
   for element in $(eval "echo \"\${$__array2[*]}\""); do
-    __tmp_array2+=( "$element" )
+    __tmp_array2+=("$element")
   done
 
   # If __return_array is the same as __array1 no need to populate it with
@@ -467,8 +458,7 @@ function bash_array_asymmetric_diff()  {
   fi
 
   # Check if arrays are empty
-  if [[ "$(declare -p __tmp_array1)" =~ __tmp_array1$|\(\)$ ||
-        "$(declare -p __tmp_array2)" =~ __tmp_array2$|\(\)$ ]]; then
+  if [[ "$(declare -p __tmp_array1)" =~ __tmp_array1$|\(\)$ || "$(declare -p __tmp_array2)" =~ __tmp_array2$|\(\)$ ]]; then
     return
   fi
 
@@ -483,7 +473,6 @@ function bash_array_asymmetric_diff()  {
   unset __tmp_array1
   unset __tmp_array2
 }
-
 
 ## @fn bash_array_intersect()
 ## @brief Returns the common elements between two arrays
@@ -515,8 +504,7 @@ function bash_array_intersect() {
   fi
 
   # Check if arrays are empty
-  if [[ "$(declare -p "$__array1")" =~ $__array1$|\(\)$ ||
-        "$(declare -p "$__array2")" =~ $__array2$|\(\)$ ]]; then
+  if [[ "$(declare -p "$__array1")" =~ $__array1$|\(\)$ || "$(declare -p "$__array2")" =~ $__array2$|\(\)$ ]]; then
     declare -ag "$name"
     return
   fi
@@ -527,7 +515,6 @@ function bash_array_intersect() {
   __array2="$__array2[*]"
   # <<-CODE-NOTE: The `[*]` is added in order for the indirect reference a few
   #               lines below to work together with the array expansion.
-
 
   declare -a __tmp_array=()
   local -i i=0
@@ -543,7 +530,6 @@ function bash_array_intersect() {
 
   eval "declare -ag $name"=${__tmp_declaration#*=}
 }
-
 
 # TODO add tests
 ## @fn bash_string_join()

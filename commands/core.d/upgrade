@@ -18,7 +18,6 @@
 #   Upgrade the tool:
 #     {{go}} {{cmd}}
 
-
 function core_upgrade_run_upgrades() {
   . "$_GO_USE_MODULES" 'core' 'bash'
 
@@ -29,7 +28,8 @@ function core_upgrade_run_upgrades() {
     # <<-CODE-NOTE 1.2.0 is the version when this upgrade mechanism was
     #              implemented.
   else
-    old_version="$(core_get_installed_version)"
+    core_get_installed_version
+    old_version="$version"
     new_version="$(core_get_new_version)"
   fi
 
@@ -37,6 +37,7 @@ function core_upgrade_run_upgrades() {
     warn 'upgrades already performed'
   fi
 
+  # TODO get files in reverse order to avoid checking so many files
   for file in "${_HEADSTART_UPGRADES_DIR-}/"*; do
     if ! bash_compare_versions "${file##*/v}" "$old_version"; then
       if bash_compare_versions "${file##*/v}" "$new_version"; then
@@ -46,7 +47,7 @@ function core_upgrade_run_upgrades() {
   done
 
   local -a upgrade_functions
-  upgrade_functions=($(compgen -A function -X '!core_upgrade_[0-9]*' ||:))
+  upgrade_functions=($(compgen -A function -X '!core_upgrade_[0-9]*' || :))
 
   if [[ "${#upgrade_functions[@]}" -eq 0 ]]; then
     warn 'no updates to perform'
@@ -84,7 +85,7 @@ HERE
 
     upgrade_functions="${upgrade_functions[*]}"
     upgrade_functions="${upgrade_functions#*$continue_from_function}"
-    upgrade_functions=( $continue_from_function$upgrade_functions )
+    upgrade_functions=($continue_from_function$upgrade_functions)
 
     warn "continuing from previously failed update $continue_from_function"
     sleep 2
@@ -133,7 +134,7 @@ HERE
           gsub(/;$/,"");
           printf("%s %s", $0, " &&\n")
         }
-      }' <<< "$(declare -f "$function")"
+      }' <<<"$(declare -f "$function")"
     )"
     eval "$new_func"
     # <<-CODE-NOTE In order to have the `core_upgrade_XXXXXXXXXXXX_on_failure`
@@ -159,9 +160,9 @@ HERE
 
     upgrade_output="$("$function" 2>&1)" && ec=0 || ec="$?"
 
-    if  [[ "$ec" -ne 0 ]]; then
-      echo -n "$function" >| "$PROJECT_DIR/.core_failed_upgrade"
-      echo "$upgrade_output" >| "$PROJECT_DIR/.core_failed_upgrade_output"
+    if [[ "$ec" -ne 0 ]]; then
+      echo -n "$function" >|"$PROJECT_DIR/.core_failed_upgrade"
+      echo "$upgrade_output" >|"$PROJECT_DIR/.core_failed_upgrade_output"
 
       if [[ "$(type -t "${function}_on_failure")" == 'function' ]]; then
         warn "rolling back update $function"
@@ -172,7 +173,7 @@ HERE
           declare -a header=()
 
           num_chars="$(wc -c <<<"$function")"
-          offby="$(( (78-num_chars)/2-1))"
+          offby="$(((78 - num_chars) / 2 - 1))"
           num_chars=num_chars+16
           header+=("$(eval "printf '%0.s#' {0..$offby}")")
           header+=("$function")
@@ -198,7 +199,7 @@ HERE
           declare -a header=()
 
           num_chars="$(wc -c <<<"$function")"
-          offby="$(( (78-num_chars)/2-1))"
+          offby="$(((78 - num_chars) / 2 - 1))"
           num_chars=num_chars+16
           header+=("$(eval "printf '%0.s#' {0..$offby}")")
           header+=("$function")
@@ -220,7 +221,6 @@ HERE
   info "successfully updated to version $new_version"
 }
 
-
 function core_upgrade() {
   while [[ "$#" -gt 0 ]]; do
     case "${1-}" in
@@ -233,8 +233,10 @@ function core_upgrade() {
     esac
   done
 
+  if [[ ! -v _HEADSTART_UPGRADES_DIR ]]; then
+    abort "_HEADSTART_UPGRADES_DIR is not set" "$_HEADSTART_EC_CONFIG"
+  fi
   core_upgrade_run_upgrades
 }
-
 
 core_upgrade "$@"

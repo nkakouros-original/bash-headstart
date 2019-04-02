@@ -176,7 +176,7 @@ function core_bootstrap_configure() {
   info "Select your role in the project:"
   local PS3='Select role: '
   @go.select_option 'user_role' 'developer' 'TA'
-  echo "role = $user_role" >>"$_HEADSTART_PROJECT_CONFIG"
+  echo "user_role = $user_role" >>"$_HEADSTART_PROJECT_CONFIG"
 }
 
 function core_bootstrap_lock() {
