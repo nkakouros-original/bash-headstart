@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 
 git submodule update
-gilt overlay
+gilt --config "vendor/gilt.developer.yml" overlay
