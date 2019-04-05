@@ -40,8 +40,8 @@ declare -gx _HEADSTART_TMP_DIR="${_HEADSTART_TMP_DIR-$PROJECT_DIR/.tmp}"
 declare -gx _HEADSTART_VENDOR_DIR="${_HEADSTART_CORE_DIR}/vendor"
 
 declare -gx _HEADSTART_CMD="${_GO_CMD##*/}"
-declare -gx _HEADSTART_PROJECT_CONFIG="$PROJECT_DIR/project.conf"
-declare -gx _HEADSTART_CORE_LOCK="$PROJECT_DIR/.core.lock"
+declare -gx _HEADSTART_PROJECT_CONFIG="${HEADSTART_PROJECT_CONFIG-$PROJECT_DIR/project.conf}"
+declare -gx _HEADSTART_CORE_LOCK="${HEADSTART_CORE_LOCK-$PROJECT_DIR/.core.lock}"
 
 function headstart() {
   local debug=false

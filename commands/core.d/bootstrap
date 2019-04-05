@@ -62,10 +62,10 @@ function core_bootstrap_git_lay() {
   local user_role="$(project_get_user_role)"
 
   info 'layering dependencies with gilt...'
-  if [[ -e "$PROJECT_DIR/gilt.$user_role.yml" ]]; then
-    gilt --config "$PROJECT_DIR/gilt.$user_role.yml" overlay
-  elif [[ -e "$PROJECT_DIR/gilt.yml" ]]; then
-    gilt --config "$PROJECT_DIR/gilt.yml" overlay
+  if [[ -e "$PROJECT_DIR/vendor/gilt.$user_role.yml" ]]; then
+    gilt --config "$PROJECT_DIR/vendor/gilt.$user_role.yml" overlay
+  elif [[ -e "$PROJECT_DIR/vendor/gilt.yml" ]]; then
+    gilt --config "$PROJECT_DIR/vendor/gilt.yml" overlay
   fi
 }
 
@@ -144,7 +144,7 @@ function core_bootstrap_configure() {
     reuse_prompt="players per world (old value is default): "
   fi
 
-  echo '[default]' >|"$PROJECT_DIR/project.conf"
+  echo '[default]' >|"$_HEADSTART_PROJECT_CONFIG"
 
   project_prompt="${project_prompt-ID of Google Cloud project: }"
   local project=''
@@ -154,7 +154,7 @@ function core_bootstrap_configure() {
     "${old_project-}" \
     '' "${old_project:-required}"
 
-  echo "project = $project" >>"$PROJECT_DIR/project.conf"
+  echo "project = $project" >>"$_HEADSTART_PROJECT_CONFIG"
 
   reuse_prompt="${reuse_prompt-players per world: }"
   local world_reuse=''

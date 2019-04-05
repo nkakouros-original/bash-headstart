@@ -17,16 +17,14 @@ declare _GO_STANDALONE=true
 
 # Initialize go-script-bash
 . "$_HEADSTART_CORE_DIR/vendor/go-script-bash/go-core.bash" "$@"
-# <<-CODE_NOTE: GO_SCRIPTS_DIR points to the **relative** directory where our
-#               custom commands are. It is the same with the (absolute path)
-#               HEADSTART_COMMANDS_DIR. We set it in the `headstart` entry script.
-#               This allows us to set this variable to a custom value in our
-#               tests where we generate custom test scripts on the fly to test
-#               specific functionality (see
-#               scripts/custom/lib/testing/environment:@go.create_test_go_script()).
-#               There we set this variable to point somewhere under the
-#               project's tmp folder (see the `TEST_GO_SCRIPTS_RELATIVE_DIR`
-#               variable in the same file as above).
+# GO_SCRIPTS_DIR points to the **relative** directory where our custom commands
+# are. It is the same with the (absolute path) HEADSTART_COMMANDS_DIR. We set it
+# in the `headstart` entry script.  This allows us to set this variable to
+# a custom value in our tests where we generate custom test scripts on the fly
+# to test specific functionality (see
+# lib/testing/environment:@go.create_test_go_script()).  There we set this
+# variable to point somewhere under the project's tmp folder (see the
+# `TEST_GO_SCRIPTS_RELATIVE_DIR` variable in the same file as above).
 
 # BASH INFINITY
 # =============
@@ -51,7 +49,7 @@ import util/namedParameters
 
 # TODO do I need this?
 # if [[ "${_GO_BATS_DIR-unset}" == 'unset' ]]; then
-  import util/exception
+import util/exception
 # fi
 # <<-CODE-NOTE: When we are testing the project's code, we want for instance to
 #               check that a function returns with a specific code in case of
@@ -61,7 +59,7 @@ import util/namedParameters
 #               module when not testing. To check if we are in test mode or
 #               not, we check the existence of a variable that is set only when
 #               testing. We chose randomly `_GO_BATS_DIR` that is set in
-#               `scripts/custom/devel/test`.
+#               `devel/test`.
 
 # CUSTOM LIBS
 # ===========
@@ -73,4 +71,3 @@ import util/namedParameters
 # test go scripts. There, the 'headstart' function in headstart-core is not used, so
 # we need to explicitly call any function that is needed and that the 'headstart'
 # function would have called if itself was run in the test go scripts.
-

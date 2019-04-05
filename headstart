@@ -9,4 +9,4 @@ headstart "${args[@]}"
 # <<-CODE_NOTE: We call the `headstart` function here, not inside
 # `headstart-core.bash`. The reason is that during testing we want to create
 # custom scripts like this one here that instead of calling `headstart "$@"` will
-# call a specific function, a command, `headstart world list` directly, etc.
+# call a specific function, a command, directly, etc.
