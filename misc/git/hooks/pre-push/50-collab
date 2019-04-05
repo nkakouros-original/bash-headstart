@@ -17,6 +17,4 @@ while IFS=, read remote repo branch; do
     echo -e "\033[0;33mPushing to contrib mirror: $remote\033[0m"
     git push --no-verify -f "$remote" "$branch"
   fi
-done <<< "$(grep -v '^#' .gitcollab | grep -v '^$')"
-
-
+done <<<"$(grep -v '^#' .gitcollab | grep -v '^$')"

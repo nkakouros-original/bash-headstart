@@ -19,6 +19,6 @@ while read -r url \
     echo -e "\033[0;33mPushing to origin: $url\033[0m"
     git push "origin" --all
   fi
-done <<<"$(grep -A2 -- '- git:' gilt.yml)"
+done <<<"$(grep -A2 -- '- git:' vendor/gilt-developer.yml)"
 
 cd "$old_dir" || exit 1
