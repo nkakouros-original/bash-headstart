@@ -107,7 +107,7 @@ function core_bootstrap_git_hooks() {
 
 function core_bootstrap_set_version() {
   if [[ ! -e "$_HEADSTART_CORE_LOCK" ]]; then
-    mkdir "${_HEADSTART_CORE_LOCK%/*}"
+    mkdir -p "${_HEADSTART_CORE_LOCK%/*}"
     : >"$_HEADSTART_CORE_LOCK"
   fi
 
@@ -146,7 +146,7 @@ function core_bootstrap_configure() {
   fi
 
   if [[ ! -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
-    mkdir "${_HEADSTART_PROJECT_CONFIG%/*}"
+    mkdir -p "${_HEADSTART_PROJECT_CONFIG%/*}"
   fi
 
   echo '[default]' >|"$_HEADSTART_PROJECT_CONFIG"
