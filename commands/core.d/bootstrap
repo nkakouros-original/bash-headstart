@@ -107,12 +107,13 @@ function core_bootstrap_git_hooks() {
 
 function core_bootstrap_set_version() {
   if [[ ! -e "$_HEADSTART_CORE_LOCK" ]]; then
-    : >|"$_HEADSTART_CORE_LOCK"
+    mkdir "${_HEADSTART_CORE_LOCK%/*}"
+    : >"$_HEADSTART_CORE_LOCK"
   fi
 
   while read -s line; do
     if [[ "$line" =~ ^version=.* ]]; then
-      echo "${BASH_REMATCH[0]}" >"$_HEADSTART_CORE_LOCK"
+      echo "${BASH_REMATCH[0]}" >|"$_HEADSTART_CORE_LOCK"
     fi
   done <"$PROJECT_DIR/version"
 }
@@ -142,6 +143,10 @@ function core_bootstrap_configure() {
     [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ world_reuse\ =\ ([^[:space:]]+) ]]
     old_reuse="${BASH_REMATCH[1]}"
     reuse_prompt="players per world (old value is default): "
+  fi
+
+  if [[ ! -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
+    mkdir "${_HEADSTART_PROJECT_CONFIG%/*}"
   fi
 
   echo '[default]' >|"$_HEADSTART_PROJECT_CONFIG"
