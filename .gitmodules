@@ -1,12 +1,12 @@
 [submodule "vendor/go-script-bash"]
 	path = vendor/go-script-bash
-	url = https://github.com/tterranigma/go-script-bash
+	url = https://github.com/nkakouros-forks/go-script-bash
 	branch = stable
 [submodule "vendor/bash-infinity"]
 	path = vendor/bash-infinity
-	url = https://github.com/tterranigma/bash-oo-framework
+	url = https://github.com/nkakouros-forks/bash-oo-framework
 	branch = stable
 [submodule "vendor/autohook"]
 	path = vendor/autohook
-	url = https://github.com/tterranigma/Autohook
+	url = https://github.com/nkakouros-forks/Autohook
 	branch = stable
