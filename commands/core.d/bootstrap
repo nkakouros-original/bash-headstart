@@ -257,7 +257,7 @@ function core_bootstrap() {
   # TODO unify git functions
   core_bootstrap_git_lay
 
-  local project_bootstrap_function="${_HEADSTART_CMD}_bootstrap"
+  local project_bootstrap_function="${_HEADSTART_SCRIPT_NAME}_bootstrap"
   if [[ "$(type -t "$project_bootstrap_function")" == 'function' ]]; then
     "$project_bootstrap_function"
   fi

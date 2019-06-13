@@ -6,6 +6,8 @@ declare -gx PROJECT_DIR
 cd "${0%/*}" || exit "$_HEADSTART_EC_GENERR"
 PROJECT_DIR="$PWD"
 
+declare -gx _HEADSTART_SCRIPT_NAME="${0##*/}"
+
 # Path to bash-headstart's directory
 if [[ "${BASH_SOURCE[0]:0:1}" != '/' ]]; then
   cd "$PWD/${BASH_SOURCE[0]%/*}" || exit "$_HEADSTART_EC_GENERR"
