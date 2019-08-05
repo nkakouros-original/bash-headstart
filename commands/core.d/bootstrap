@@ -254,10 +254,9 @@ function core_bootstrap() {
   core_bootstrap_install_command
   core_bootstrap_git_hooks
   core_bootstrap_install_dependencies
-  # TODO unify git functions
   core_bootstrap_git_lay
 
-  local project_bootstrap_function="${_HEADSTART_SCRIPT_NAME}_bootstrap"
+  local project_bootstrap_function="${0##*/}_bootstrap"
   if [[ "$(type -t "$project_bootstrap_function")" == 'function' ]]; then
     "$project_bootstrap_function"
   fi
