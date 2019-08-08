@@ -10,7 +10,10 @@ function core_get_installed_version() {
   declare -xg "${_HEADSTART_SCRIPT_NAME~~}_VERSION_PATCH"
 
   if [[ ! -f "$_HEADSTART_CORE_LOCK" ]]; then
-    echo 0
+    eval "${_HEADSTART_SCRIPT_NAME~~}_VERSION_MAJOR=0"
+    eval "${_HEADSTART_SCRIPT_NAME~~}_VERSION_MINOR=0"
+    eval "${_HEADSTART_SCRIPT_NAME~~}_VERSION_PATCH=0"
+    eval "${_HEADSTART_SCRIPT_NAME~~}_VERSION=0"
     # <<-CODE-NOTE A version of 0 means that the project is not installed yet.
     return
   fi
@@ -40,9 +43,10 @@ function core_get_new_version() {
 }
 
 function core_check_upgrades() {
-  current_version="$(core_get_installed_version)"
+  core_get_installed_version
   downloaded_version="$(core_get_new_version)"
 
+  eval "current_version=${_HEADSTART_SCRIPT_NAME~~}_VERSION"
   if [[ "$current_version" == '0' ]]; then
     return
     # <<-CODE-NOTE A version of 0 means that the project is not installed yet.
