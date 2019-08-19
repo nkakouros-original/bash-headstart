@@ -72,7 +72,7 @@ function core_bootstrap_git_lay() {
 function core_bootstrap_ask_passphrase() {
   . "$_GO_USE_MODULES" 'prompt'
 
-  eval "$(ssh-agent -t 30)"
+  eval "$(ssh-agent -t 300)"
 
   # TODO do this generic in a loop
   @go.prompt_for_input \
