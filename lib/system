@@ -81,3 +81,32 @@ function show_subcommands() {
   . "$_GO_USE_MODULES" 'subcommands'
   @go.show_subcommands || exit
 }
+
+function parse_args_and_options() {
+  if [[ " $* " == *' --help-filter '* ]]; then
+    shift
+    _help_filter "$@"
+    exit
+  fi
+
+  help="$("$0" "${_GO_CMD_NAME[@]}" -h 2>&1)"
+  help="${help//"$_GO_CMD" "${_GO_CMD_NAME[@]:0:${#_GO_CMD_NAME[@]}-1}"/}"
+  help="$(_help_filter "$help")"
+
+  local ec
+  error="$(eval "$(docopts -h "$help" : "$@")" 2>&1)" || ec="$?"
+  error="${error//  ${_GO_CMD_NAME[-1]}/$_GO_CMD ${_GO_CMD_NAME[*]}}"
+  info "$error" 0 'default'
+  abort "" "$_HEADSTART_EC_USAGE"
+}
+
+function _help_filter() {
+  @required [string] help_text
+
+  declare -p HEADSTART_HELP_REPLACEMENTS
+  for token in "${!HEADSTART_HELP_REPLACEMENTS[@]}"; do
+    help_text="${help_text//{{$token\}\}/${HEADSTART_HELP_REPLACEMENTS[$token]}}"
+  done
+
+  printf -- "$help_text\n"
+}

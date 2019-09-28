@@ -68,9 +68,6 @@ function headstart() {
       --version | -V)
         print_version=true
         ;;
-      --help | -h)
-        print_help=true
-        ;;
       complete | env)
         # <<-CODE_NOTE: This is matched when autocompletion occurs or when using
         #               `eval "$(./headstart env -)"`
@@ -134,10 +131,7 @@ function headstart() {
 
   core_check_upgrades
 
-  if [[ "$print_help" == 'true' ]]; then
-    @go help "${rest[@]}"
-    return
-  fi
+  . "$_GO_USE_MODULES" 'help-replacements'
 
   # TODO do not explicitly create these. Parse the config and expose the
   # variables in bash-headstart

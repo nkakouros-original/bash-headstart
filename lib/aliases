@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-GO_ALIAS_CMDS_EXTRA=( 'nvim' 'vim' 'nano' "${HEADSTART_ALIAS_CMDS_EXTRA[@]}" )
-GO_ALIAS_EXPAND_CMDS=( "${HEADSTART_ALIAS_EXPAND_CMDS[@]}" )
+GO_ALIAS_CMDS_EXTRA=('nvim' 'vim' 'nano' "${HEADSTART_ALIAS_CMDS_EXTRA[@]}")
+GO_ALIAS_EXPAND_CMDS=("${HEADSTART_ALIAS_EXPAND_CMDS[@]}")
 
-alias sudo='sudo '  # https://askubuntu.com/questions/22037
-
+alias sudo='sudo ' # https://askubuntu.com/questions/22037
+alias _start='parse_args_and_options "$@"; _start'
