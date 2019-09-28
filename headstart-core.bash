@@ -131,8 +131,6 @@ function headstart() {
 
   core_check_upgrades
 
-  . "$_GO_USE_MODULES" 'help-replacements'
-
   # TODO do not explicitly create these. Parse the config and expose the
   # variables in bash-headstart
   declare -gx GCE_PROJECT_NAME
