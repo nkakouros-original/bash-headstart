@@ -85,11 +85,13 @@ function show_subcommands() {
 function parse_args_and_options() {
   help="$("$0" "${_GO_CMD_NAME[@]}" -h 2>&1)"
   help="${help//"$_GO_CMD" "${_GO_CMD_NAME[@]:0:${#_GO_CMD_NAME[@]}-1}"/}"
-  help="$(_help_filter "$help")"
 
-  local ec
-  error="$(eval "$(docopts -h "$help" : "$@")" 2>&1)" || ec="$?"
-  error="${error//  ${_GO_CMD_NAME[-1]}/$_GO_CMD ${_GO_CMD_NAME[*]}}"
-  info "$error" 0 'default'
-  abort "" "$_HEADSTART_EC_USAGE"
+  local ec=0
+  eval "$(docopts -h "$help" : "$@")" 2>&1 || ec="$?"
+  if [[ "$ec" -gt 0 ]]; then
+    error="$(eval "$(docopts -h "$help" : "$@")" 2>&1)" || :
+    error="${error//  ${_GO_CMD_NAME[-1]}/$_GO_CMD ${_GO_CMD_NAME[*]}}"
+    info "$error" 0 'default'
+    abort "" "$_HEADSTART_EC_USAGE"
+  fi
 }
