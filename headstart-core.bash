@@ -81,7 +81,7 @@ function headstart() {
     shift
   done
 
-  . "$_GO_USE_MODULES" 'installation'
+  . "$_GO_USE_MODULES" 'installation' 'aliases'
 
   if [[ "$go_early" == 'true' ]]; then
     case "${rest[0]}" in
@@ -99,7 +99,7 @@ function headstart() {
   fi
   unset go_early
 
-  . "$_GO_USE_MODULES" 'core' 'aliases' 'project' 'system'
+  . "$_GO_USE_MODULES" 'core' 'project' 'system'
 
   set_standard_outputs
   set_trace "$debug"

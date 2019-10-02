@@ -83,15 +83,34 @@ function show_subcommands() {
 }
 
 function parse_args_and_options() {
+  if [[ " $* " == *' --complete '* ]]; then
+    get_completions "$@"
+    exit
+  fi
+
   help="$("$0" "${_GO_CMD_NAME[@]}" -h 2>&1)"
   help="${help//"$_GO_CMD" "${_GO_CMD_NAME[@]:0:${#_GO_CMD_NAME[@]}-1}"/}"
 
   local ec=0
-  eval "$(docopts -h "$help" : "$@")" 2>&1 || ec="$?"
+  eval "$(docopts --no-help --help "$help" : "$@")" 2>&1 || ec="$?"
+
   if [[ "$ec" -gt 0 ]]; then
-    error="$(eval "$(docopts -h "$help" : "$@")" 2>&1)" || :
+    error="$(eval "$(docopts --no-help --help "$help" : "$@")" 2>&1)" || :
     error="${error//  ${_GO_CMD_NAME[-1]}/$_GO_CMD ${_GO_CMD_NAME[*]}}"
     info "$error" 0 'default'
-    abort "" "$_HEADSTART_EC_USAGE"
+    abort "" "$_HEADSTART_EC_USAGE" ''
+  fi
+}
+
+function get_completions() {
+  help="$("$0" "${_GO_CMD_ARGV[@]:1}" -h 2>&1)"
+  help="${help//"$_GO_CMD" "${_GO_CMD_NAME[@]:0:${#_GO_CMD_NAME[@]}-1}"/}"
+
+  awk \
+    '/[[:space:]]+--[[:alnum:]]/{if(substr($1, ",")){print $2}else{print $1}}' \
+    <<<"$help"
+
+  if type _completions &>/dev/null; then
+    _completions "$@"
   fi
 }
