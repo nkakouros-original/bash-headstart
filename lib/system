@@ -116,6 +116,11 @@ function get_completions() {
 
   . "$_GO_USE_MODULES" 'helpers/completions' 'complete'
 
+  # Get completions from the command itself
+  if type _completions &>/dev/null; then
+    _completions "$word_index" "${rest[@]}"
+  fi
+
   # Get completions from command options
   if [[ "${_GO_CMD_NAME[0]}" == 'complete' ]]; then
     help="$("$0" "${_GO_CMD_ARGV[@]:1}" -h 2>&1)"
@@ -149,9 +154,4 @@ function get_completions() {
   @go.complete_remove_completions_already_present 'rest' 'c' "${#c[@]}"
 
   echo "${c[@]}"
-
-  # Get completions from the command itself
-  if type _completions &>/dev/null; then
-    _completions "$word_index" "${rest[@]}"
-  fi
 }
