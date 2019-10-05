@@ -104,7 +104,7 @@ function parse_args_and_options() {
 
   if [[ "$ec" -gt 0 ]]; then
     error="$(eval "$(docopts --no-help --help "$help" : "$@" || :)" 2>&1)" || :
-    error="${error//${_GO_CMD_NAME[-1]}/$_GO_CMD ${_GO_CMD_NAME[*]}}"
+    error="${error/${_GO_CMD_NAME[-1]}/$_GO_CMD ${_GO_CMD_NAME[*]}}"
     info "$error" 0 'default'
     abort "" "$_GO_EC_USAGE" ''
   fi
@@ -117,8 +117,8 @@ function get_completions() {
   . "$_GO_USE_MODULES" 'helpers/completions' 'complete'
 
   # Get completions from the command itself
-  if type _completions &>/dev/null; then
-    _completions "$word_index" "${rest[@]}"
+  if type __completions &>/dev/null; then
+    __completions "$word_index" "${rest[@]}"
   fi
 
   # Get completions from command options
