@@ -81,3 +81,77 @@ function show_subcommands() {
   . "$_GO_USE_MODULES" 'subcommands'
   @go.show_subcommands || exit
 }
+
+function parse_args_and_options() {
+  if [[ " $* " == *' --complete '* ]]; then
+    shift
+    get_completions "$@"
+    exit
+  fi
+
+  help="$("$0" "${_GO_CMD_NAME[@]}" -h 2>&1)"
+  help="${help//"$_GO_CMD" "${_GO_CMD_NAME[@]:0:${#_GO_CMD_NAME[@]}-1}"/}"
+
+  local ec=0
+  eval "$(
+    # docopts return `exit 64` in case of error which causes the script to exit.
+    # Mask exit to return to avoid exiting.
+    echo 'exit() { return "$1"; }'
+    docopts --no-help --help "$help" : "$@" || :
+  )" &>/dev/null || ec="$?"
+
+  unset exit
+
+  if [[ "$ec" -gt 0 ]]; then
+    error="$(eval "$(docopts --no-help --help "$help" : "$@" || :)" 2>&1)" || :
+    error="${error/${_GO_CMD_NAME[-1]}/$_GO_CMD ${_GO_CMD_NAME[*]}}"
+    info "$error" 0 'default'
+    abort "" "$_GO_EC_USAGE" ''
+  fi
+}
+
+function get_completions() {
+  [integer] word_index=0
+  [...rest] rest
+
+  . "$_GO_USE_MODULES" 'helpers/completions' 'complete'
+
+  # Get completions from the command itself
+  if type __completions &>/dev/null; then
+    __completions "$word_index" "${rest[@]}"
+  fi
+
+  # Get completions from command options
+  if [[ "${_GO_CMD_NAME[0]}" == 'complete' ]]; then
+    help="$("$0" "${_GO_CMD_ARGV[@]:1}" -h 2>&1)"
+  else
+    help="$("$0" "${_GO_CMD_NAME[@]}" -h 2>&1)"
+  fi
+  help="${help//"$_GO_CMD" "${_GO_CMD_NAME[@]:0:${#_GO_CMD_NAME[@]}-1}"/}"
+
+  readarray -t c <<<"$(
+    awk '/Options/{
+      x=NR+1000
+      next
+      } (NR<=x) {
+        subs="^[ ]+-+[a-zA-Z]"
+        if (match($0, subs)) {
+          if (s=index($0, ", -")) {
+            $0=substr($0, s+2)
+            print substr($0, 0, index($0, " "))
+          } else {
+            print substr($1, index($1, " "))
+          }
+        }
+      }' <<<"$help"
+  )"
+  c=("${c[@]%[[:space:]]}")
+
+  if [[ "${#rest[@]}" -gt 0 ]]; then
+    unset "rest[-1]"
+  fi
+
+  @go.complete_remove_completions_already_present 'rest' 'c' "${#c[@]}"
+
+  echo "${c[@]}"
+}

@@ -1,0 +1,29 @@
+#!/usr/bin/env bash
+#
+# Finds non git submodules git projects that need pushing
+#
+# Usage:
+#   {{go}} {{cmd}}
+
+function __() {
+  local -a git_projects
+  readarray -t git_projects <<<"$(find * -name '.git' -type d)"
+
+  local proj
+  local flag=false
+  for proj in "${git_projects[@]}"; do
+    proj="${proj%.git}"
+    proj="${proj#./}"
+    if ! git -C "$proj" diff-index --quiet HEAD --; then
+      info "${proj#$PROJECT_DIR} has changes"
+      git -C "$proj" status
+      flag=true
+    fi
+  done
+
+  if [[ "$flag" == false ]]; then
+    info 'all subprojects are synced'
+  fi
+}
+
+__ "$@"

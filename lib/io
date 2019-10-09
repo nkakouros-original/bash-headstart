@@ -9,12 +9,10 @@
 ## will either be used only once in the early stages of {{ go }} script
 ## execution or need to be short as they are frequently and universally used.
 
-
 ## @var PS4
 ## @brief Sets the prefix of the trace output when `set -x` is used (see
 ## set_trace())
 declare -gx PS4="\$(exit_code=\$?; if [ \$exit_code -ne 0 ]; then echo -n \"$UI_Color_Red\"; fi; echo -n +\$exit_code;)${UI_Color_Default}(${UI_Color_Cyan}\${BASH_SOURCE#\$PROJECT_DIR/}:${UI_Color_Yellow}\${LINENO}${UI_Color_Default}):${UI_Color_Blue}\${FUNCNAME[0]:+\${FUNCNAME[0]}(): }${UI_Color_Bold}${UI_Color_Italics}${UI_Color_White}"
-
 
 ## @fn set_trace()
 ## @brief Turns on bash debugging if requested on the cli
@@ -27,10 +25,9 @@ function set_trace() {
   [boolean] debug=false
 
   if [[ "$debug" == true ]]; then
-    set -o xtrace  # set -x
+    set -o xtrace # set -x
   fi
 }
-
 
 ## @fn set_debug_levels()
 ## @brief Sets verbosity levels for ansible and other commands
@@ -69,7 +66,6 @@ function set_debug_levels() {
   fi
 }
 
-
 ## @fn info()
 ## @brief Print message to stdout
 ## @param message ***string*** The message to print (__default__: `### DEBUG`)
@@ -95,7 +91,6 @@ function info() {
   sleep "$delay"
 }
 
-
 ## @fn abort()
 ## @brief Print message to stderr and exit
 ## @param message ***string*** The message to print (__default__: '')
@@ -104,22 +99,21 @@ function info() {
 function abort() {
   [string] message=''
   [string] exit_code="$_HEADSTART_EC_GENERR"
+  [string] prefix='error: '
 
-  if ! [[ "$exit_code" =~ [0-9]+ && "$exit_code" -ge 0 &&
-    "$exit_code" -le 255 ]]; then
+  if ! [[ "$exit_code" =~ [0-9]+ && "$exit_code" -ge 0 && "$exit_code" -le 255 ]]; then
     return "$_HEADSTART_EC_ARGERR"
   fi
 
   if [[ "$message" != '' ]]; then
     COLUMNS=100 @go.printf \
-      "${UI_Color_Red}${UI_Color_Bold}error: ${UI_Color_NoBold}%b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
+      "${UI_Color_Red}${UI_Color_Bold}${prefix}${UI_Color_NoBold}%b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
     # <<-CODE-NOTE: `COLUMNS` is set to 91 instead of 80 due to the no width
     #               color characters (we want to have 80 characters output).
   fi
 
   exit "$exit_code"
 }
-
 
 ## @fn warn()
 ## @brief Print message to stdout with different color than info()
@@ -129,7 +123,6 @@ function warn() {
 
   COLUMNS=91 @go.printf "${UI_Color_Magenta}Warning: %b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
 }
-
 
 function set_standard_outputs() {
   # TODO consider go-script lib/file for handling descriptors
@@ -164,7 +157,6 @@ function set_standard_outputs() {
     # we are not redirecting stderr, to show errors even without debugging enabled
   fi
 }
-
 
 function color_stderr() {
   @required [string] command

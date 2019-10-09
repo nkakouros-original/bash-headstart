@@ -21,20 +21,17 @@
 function core_upgrade_run_upgrades() {
   . "$_GO_USE_MODULES" 'core' 'bash'
 
-  local version
-  if [[ ! -f "$_HEADSTART_CORE_LOCK" ]]; then
-    old_version='1.2.0'
-    new_version='1.3.0'
-    # <<-CODE-NOTE 1.2.0 is the version when this upgrade mechanism was
-    #              implemented.
-  else
-    core_get_installed_version
-    old_version="$version"
-    new_version="$(core_get_new_version)"
-  fi
+  local old_version
+  local new_version
+
+  core_get_installed_version
+
+  old_version="$TWMN_VERSION"
+  new_version="$(core_get_new_version)"
 
   if [[ "$old_version" == "$new_version" ]]; then
     warn 'upgrades already performed'
+    return
   fi
 
   # TODO get files in reverse order to avoid checking so many files
@@ -51,7 +48,7 @@ function core_upgrade_run_upgrades() {
 
   if [[ "${#upgrade_functions[@]}" -eq 0 ]]; then
     warn 'no updates to perform'
-    exit
+    return
   fi
 
   local notice

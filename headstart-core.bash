@@ -6,6 +6,8 @@ declare -gx PROJECT_DIR
 cd "${0%/*}" || exit "$_HEADSTART_EC_GENERR"
 PROJECT_DIR="$PWD"
 
+declare -gx _HEADSTART_SCRIPT_NAME="${0##*/}"
+
 # Path to bash-headstart's directory
 if [[ "${BASH_SOURCE[0]:0:1}" != '/' ]]; then
   cd "$PWD/${BASH_SOURCE[0]%/*}" || exit "$_HEADSTART_EC_GENERR"
@@ -43,6 +45,13 @@ declare -gx _HEADSTART_CMD="${_GO_CMD##*/}"
 declare -gx _HEADSTART_PROJECT_CONFIG="${HEADSTART_PROJECT_CONFIG-data/config/project.conf}"
 declare -gx _HEADSTART_CORE_LOCK="${HEADSTART_CORE_LOCK-data/config/.core.lock}"
 
+declare -x _GO_HELP_HIJACK=true
+declare -x GO_TAB_COMPLETIONS_PATTERN=''
+
+. "$_GO_USE_MODULES" 'core'
+
+core_get_installed_version
+
 function headstart() {
   local debug=false
   local verbosity=''
@@ -62,9 +71,6 @@ function headstart() {
       --version | -V)
         print_version=true
         ;;
-      --help | -h)
-        print_help=true
-        ;;
       complete | env)
         # <<-CODE_NOTE: This is matched when autocompletion occurs or when using
         #               `eval "$(./headstart env -)"`
@@ -78,7 +84,7 @@ function headstart() {
     shift
   done
 
-  . "$_GO_USE_MODULES" 'installation'
+  . "$_GO_USE_MODULES" 'installation' 'aliases'
 
   if [[ "$go_early" == 'true' ]]; then
     case "${rest[0]}" in
@@ -96,7 +102,7 @@ function headstart() {
   fi
   unset go_early
 
-  . "$_GO_USE_MODULES" 'core' 'aliases' 'project' 'system'
+  . "$_GO_USE_MODULES" 'core' 'project' 'system'
 
   set_standard_outputs
   set_trace "$debug"
@@ -106,8 +112,7 @@ function headstart() {
 
   if [[ "$print_version" == 'true' ]]; then
     printf "$_HEADSTART_CMD version: "
-    core_get_installed_version
-    echo "$version"
+    eval "echo \$${_HEADSTART_SCRIPT_NAME~~}_VERSION"
     return
   fi
 
@@ -128,11 +133,6 @@ function headstart() {
   fi
 
   core_check_upgrades
-
-  if [[ "$print_help" == 'true' ]]; then
-    @go help "${rest[@]}"
-    return
-  fi
 
   # TODO do not explicitly create these. Parse the config and expose the
   # variables in bash-headstart

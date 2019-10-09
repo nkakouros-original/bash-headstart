@@ -72,7 +72,7 @@ function core_bootstrap_git_lay() {
 function core_bootstrap_ask_passphrase() {
   . "$_GO_USE_MODULES" 'prompt'
 
-  eval "$(ssh-agent -t 30)"
+  eval "$(ssh-agent -t 300)"
 
   # TODO do this generic in a loop
   @go.prompt_for_input \
@@ -128,6 +128,8 @@ function core_bootstrap_configure() {
   local reuse_prompt
   local old_project
   local old_reuse
+  local old_region
+  local old_zone
 
   if [[ "$confirm" == 'true' && -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
     string="The project has already been configured. "
@@ -143,6 +145,14 @@ function core_bootstrap_configure() {
     [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ world_reuse\ =\ ([^[:space:]]+) ]]
     old_reuse="${BASH_REMATCH[1]}"
     reuse_prompt="players per world (old value is default): "
+
+    [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ google_cloud_region\ =\ ([^[:space:]]+) ]]
+    old_region="${BASH_REMATCH[1]}"
+    region_prompt="google cloud default region (old value is default): "
+
+    [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ google_cloud_zone\ =\ ([^[:space:]]+) ]]
+    old_zone="${BASH_REMATCH[1]}"
+    zone_prompt="google cloud default zone (old value is default): "
   fi
 
   if [[ ! -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
@@ -172,6 +182,26 @@ function core_bootstrap_configure() {
   done
 
   echo "world_reuse = $world_reuse" >>"$_HEADSTART_PROJECT_CONFIG"
+
+  region_prompt="${region_prompt-google cloud default region: }"
+  declare region=''
+  @go.prompt_for_input \
+    "region" \
+    "$region_prompt" \
+    "${old_region-europe-west1}" \
+    ''
+
+  echo "google_cloud_region = $region" >>"$_HEADSTART_PROJECT_CONFIG"
+
+  zone_prompt="${zone_prompt-google cloud default zone: }"
+  declare zone=''
+  @go.prompt_for_input \
+    "zone" \
+    "$zone_prompt" \
+    "${old_zone-europe-west1-b}" \
+    ''
+
+  echo "google_cloud_zone = $zone" >>"$_HEADSTART_PROJECT_CONFIG"
 
   # TODO do not hardcode this
   echo 'overlord_email = nkak@kth.se' >>"$_HEADSTART_PROJECT_CONFIG"
@@ -224,10 +254,9 @@ function core_bootstrap() {
   core_bootstrap_install_command
   core_bootstrap_git_hooks
   core_bootstrap_install_dependencies
-  # TODO unify git functions
   core_bootstrap_git_lay
 
-  local project_bootstrap_function="${_HEADSTART_CMD}_bootstrap"
+  local project_bootstrap_function="${0##*/}_bootstrap"
   if [[ "$(type -t "$project_bootstrap_function")" == 'function' ]]; then
     "$project_bootstrap_function"
   fi
