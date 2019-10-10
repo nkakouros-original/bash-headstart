@@ -111,6 +111,10 @@ function core_bootstrap_set_version() {
     : >"$_HEADSTART_CORE_LOCK"
   fi
 
+  if [[ ! -e "$PROJECT_DIR/version" ]]; then
+    cp "$_HEADSTART_CORE_DIR/misc/version.template" "$PROJECT_DIR"
+  fi
+
   while read -s line; do
     if [[ "$line" =~ ^version=.* ]]; then
       echo "${BASH_REMATCH[0]}" >|"$_HEADSTART_CORE_LOCK"
