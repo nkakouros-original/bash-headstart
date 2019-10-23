@@ -13,7 +13,6 @@ import yaml
 if random.randint(1, 4) != 3:
     sys.exit()
 
-print("in mirrors")
 with open("vendor/gilt.developer.yml", "r") as stream:
     config = yaml.safe_load(stream)
 

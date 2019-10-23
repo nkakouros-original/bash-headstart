@@ -110,13 +110,19 @@ function core_bootstrap_git_hooks() {
   "$_HEADSTART_CORE_DIR/vendor/autohook/autohook.sh" 'install'
 
   local cmd
-  cmd+="echo export "
-  cmd+="AUTOHOOK_HOOKS_DIR='\"'$_HEADSTART_CORE_DIR/misc/git/hooks'\"'"
-  cmd+=" >> /etc/profile.d/$_HEADSTART_CMD.sh"
+  cmd+="echo -e '"
+  cmd+="AUTOHOOK_HOOKS_DIR='\"'$_HEADSTART_CORE_DIR/misc/git/hooks'\"'\n"
+  if [[ "${HEADSTART_HOOKS_DIR-}" != '' ]]; then
+    cmd+="AUTOHOOK_HOOKS_DIR+=':\"'$HEADSTART_HOOKS_DIR'\"'\n"
+  fi
+  cmd+="export AUTOHOOK_HOOKS_DIR\n"
+  cmd+="export AUTOHOOK_DEBUG=1\n"
+  cmd+="' >> /etc/profile.d/$_HEADSTART_CMD.sh"
   sudo su -c "$cmd"
 }
 
 function core_bootstrap_git_branches() {
+  info 'checking out git submodule branches'
   git submodule foreach -q --recursive \
     'git checkout $(git config -f "$toplevel/.gitmodules" submodule.$name.branch || echo master)'
 }
