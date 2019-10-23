@@ -1,29 +1,33 @@
 #!/usr/bin/python
+#
+# This script will push gilt projects to any mirrors defined in
+# gilt.developer.yml.
 
-import yaml
 import os
+import random
 import sys
 from subprocess import call
-from random import randint
 
-if randint(1,4) != 3:
+import yaml
+
+if random.randint(1, 4) != 3:
     sys.exit()
 
-with open('vendor/gilt.developer.yml', 'r') as stream:
+print("in mirrors")
+with open("vendor/gilt.developer.yml", "r") as stream:
     config = yaml.safe_load(stream)
 
 old_dir = os.getcwd()
 
 for c in config:
-    if 'remotes' in c:
-        for remote in c['remotes']:
-            if 'push' in remote and remote['push']:
-                msg = '\033[0;33m{}: pushing to {} \033[0m'
-                msg = msg.format(c['dst'], remote['url'])
+    if "remotes" in c:
+        for remote in c["remotes"]:
+            if "push" in remote and remote["push"]:
+                msg = "\033[0;33m{}: pushing to {} \033[0m"
+                msg = msg.format(c["dst"], remote["url"])
                 print(msg)
-                os.chdir(c['dst'])
-                call(['git', 'push', '--no-verify', '--all', '-f', remote['url']])
+                os.chdir(c["dst"])
+                call(
+                    ["git", "push", "--no-verify", "--all", "-f", remote["url"]]
+                )
                 os.chdir(old_dir)
-
-
-

@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#
+# This script will push new commits to projects that we use as dependencies.
+# These are either handled by git (ie they are git submodules) or by gilt.
 
 old_dir="$PWD"
 
@@ -13,12 +16,18 @@ while read -r url \
   path="${path#*dst: }"
   url="${url#*git: }"
 
+  if [[ "$path" == @(files:|'') ]]; then
+    continue
+  fi
+
   cd "$old_dir/$path" || exit 1
 
   if [[ "$url" =~ ^git ]]; then
     echo -e "\033[0;33mPushing to origin: $url\033[0m"
     git push "origin" --all
   fi
-done <<<"$(grep -A2 -- '- git:' vendor/gilt-developer.yml)"
+done <<<"$(grep -A2 -- '- git:' vendor/gilt.developer.yml)"
 
 cd "$old_dir" || exit 1
+
+git submodule foreach --recursive git push

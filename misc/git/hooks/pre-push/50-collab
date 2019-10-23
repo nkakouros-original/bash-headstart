@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+#
+# This script will push the whole project to the repositories defined in the
+# .gitcollab file.
 
 if [[ "$(($(date +%s) % 5))" -ne 0 ]]; then
   exit
@@ -14,7 +17,7 @@ while IFS=, read remote repo branch; do
   fi
 
   if [[ "$1" != "$remote" ]]; then
-    echo -e "\033[0;33mPushing to contrib mirror: $remote\033[0m"
+    echo -e "\033[0;33mpushing whole project to contrib mirror: $remote\033[0m"
     git push --no-verify -f "$remote" "$branch"
   fi
 done <<<"$(grep -v '^#' .gitcollab | grep -v '^$')"
