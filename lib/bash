@@ -219,7 +219,7 @@ function bash_array_keep_unique() {
 
   array_one_1="${array_one_1%\[*\]}"
   declare -ag "$array_one_1"
-  eval "$array_one_1=("${tmp[@]}")"
+  eval "$array_one_1=(\"\${tmp[@]}\")"
 }
 
 ## TODO add tests, especially for backslash
@@ -288,12 +288,14 @@ function bash_array_to_string() {
 ## @fn bash_trim
 ## @brief Trims whitespace from the beginning and ending of strings
 ## @param string ***string*** The string to trim
+## @param chars ***string*** Characters to strip instead of whitespace
 ## @return ***string*** The trimmed string
 function bash_trim() {
   local string="${1-}"
+  local chars="${2-[:space:]}"
 
-  string="${string#[[:space:]]}"
-  string="${string%[[:space:]]}"
+  string="${string#"${string%%[!$chars]*}"}"
+  string="${string%"${string##*[!$chars]}"}"
 
   echo "$string"
 }

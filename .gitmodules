@@ -10,3 +10,6 @@
 	path = vendor/autohook
 	url = https://github.com/nkakouros-forks/Autohook
 	branch = stable
+[submodule "vendor/bash-yaml"]
+	path = vendor/bash-yaml
+	url = https://github.com/glhome/bash.git

@@ -5,6 +5,8 @@ distro_pacman="${distro_pacman:-sudo pacman -S --noconfirm}"
 distro_packages+=(
   "python"
   "python-pip"
+  "awk"
+  'sed'
 )
 
 pip_packages+=(
