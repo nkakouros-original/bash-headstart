@@ -116,6 +116,11 @@ function core_bootstrap_git_hooks() {
   sudo su -c "$cmd"
 }
 
+function core_bootstrap_git_branches() {
+  git submodule foreach -q --recursive \
+    'git checkout $(git config -f "$toplevel/.gitmodules" submodule.$name.branch || echo master)'
+}
+
 function core_bootstrap_set_version() {
   if [[ ! -e "$_HEADSTART_CORE_LOCK" ]]; then
     mkdir -p "${_HEADSTART_CORE_LOCK%/*}"
@@ -269,6 +274,7 @@ function core_bootstrap() {
   core_bootstrap_install_command
   core_bootstrap_git_collab
   core_bootstrap_git_hooks
+  core_bootstrap_git_branches
   core_bootstrap_install_dependencies
   core_bootstrap_git_lay
 
