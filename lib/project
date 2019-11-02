@@ -25,18 +25,17 @@ function project_get_gce_project() {
   project=""
 
   if [[ -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
-    try {
-      grep -E "project ?=" "$_HEADSTART_PROJECT_CONFIG" > /dev/null
-    } catch {
+    local ec=0
+    grep -E "project ?=" "$_HEADSTART_PROJECT_CONFIG" >/dev/null || ec="$?"
+    if [[ "$ec" -ne 0 ]]; then
       abort "project.conf is corrupted! Rerun '${_HEADSTART_CMD##*/} project setup'"
-    }
+    fi
     project="$(grep -E "project ?=" "$_HEADSTART_PROJECT_CONFIG")"
     project="$(echo "$project" | sed -E 's/[\s\t]*project ?= ?([a-zA-Z0-9-]+)/\1/' | tr -d "[:space:]")"
   fi
 
   echo "$project"
 }
-
 
 function project_get_world_reuse() {
   local world_reuse=''
@@ -49,7 +48,7 @@ function project_get_world_reuse() {
     if [[ "$line" =~ ^world_reuse\ ?=\ ?(.*) ]]; then
       world_reuse="${BASH_REMATCH[1]}"
     fi
-  done < "$_HEADSTART_PROJECT_CONFIG"
+  done <"$_HEADSTART_PROJECT_CONFIG"
 
   if [[ -z "$world_reuse" ]]; then
     return "$_HEADSTART_EC_GENERR"
@@ -69,7 +68,7 @@ function project_get_user_role() {
     if [[ "$line" =~ ^user_role\ ?=\ ?(.*) ]]; then
       user_role="${BASH_REMATCH[1]}"
     fi
-  done < "$_HEADSTART_PROJECT_CONFIG"
+  done <"$_HEADSTART_PROJECT_CONFIG"
 
   if [[ -z "$user_role" ]]; then
     return "$_HEADSTART_EC_GENERR"

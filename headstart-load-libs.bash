@@ -40,6 +40,10 @@ unalias "."
 #               all its files. To avoid conflict and unneeded code execution,
 #               here we unset the "." alias.
 
+unalias 'source'
+alias source=". \"\$_GO_USE_MODULES\""
+# Aliasing it to `source` to allow shellcheck to source the files as well.
+
 import UI/Color.var
 import UI/Color
 import util/log
