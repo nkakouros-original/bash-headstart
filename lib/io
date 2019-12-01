@@ -61,6 +61,10 @@ function set_debug_levels() {
 
   DEBUG_LEVELS['ansible_verbose']="${verbosity:+-}$verbosity"
 
+  if [[ "${#verbosity}" -ge 3 ]]; then
+    export IN_MOLECULE=true
+  fi
+
   if [[ "${#verbosity}" -ge 5 ]]; then
     DEBUG_LEVELS['ansible_debug']=true
   fi
