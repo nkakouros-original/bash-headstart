@@ -12,4 +12,4 @@
 	branch = stable
 [submodule "vendor/bash-yaml"]
 	path = vendor/bash-yaml
-	url = https://github.com/glhome/bash.git
+	url = https://github.com/jasperes/bash-yaml
