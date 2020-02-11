@@ -13,3 +13,4 @@
 [submodule "vendor/bash-yaml"]
 	path = vendor/bash-yaml
 	url = https://github.com/jasperes/bash-yaml
+	branch = master
