@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 #
-## @file
-## @author Nikolaos Kakouros <nkak@kth.se>
-## @brief Custom functions for the twmn project
-## @copyright TODO
-##
 ## Functions that start with 'get_' will return with values.
 ## Functions that start with 'set_' will set some global variables based on
 ## input arguments.
