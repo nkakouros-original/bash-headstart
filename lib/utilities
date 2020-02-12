@@ -1,0 +1,134 @@
+#!/usr/lib/env bash
+
+## @file
+## @author      Nikolaos Kakouros
+## @brief       Wrappers around system utilities
+## @copyright   GPLv3
+##
+## Functions in this file are named using the following convention:
+##
+##     `utilities_<utility>()`
+##
+## where:
+##
+##   * `<utility>` is the system utility that the function wraps around.
+
+## @fn utilities_ping()
+## @brief Pings a given address/hostname and returns success or error
+## @params address ***string*** The address/hostname to ping
+## @params tries ***integer*** The number of pings to send (__default__: 3)
+## @params interval ***decimal*** Seconds to wait between pings in case of
+## failure (__default__: 3)
+## @params timeout ***decimal*** Seconds to wait in total (__default__: 10)
+## @return ***exit code*** 0 if `<tries>` number of pings succeeded
+## @return ***exit code*** [_HEADSTART_EC_SIGN1](headstart__sysexits.html) in case of
+## ping failure
+## @return ***exit code*** [_HEADSTART_EC_ARGERR](headstart__sysexits.html) in case
+## of bad arguments
+##
+## - No special checks are performed on the input parameters as the ping
+##   utility will check them for us.
+## - The minimum effective value for `interval` is 0.2. This is done to avoid
+##   using sudo as that would be needed for values <0.2.
+function utilities_ping() {
+  @required [string] address
+  [integer] tries=3
+  [string] interval=3
+  [string] timeout=10
+  # <<-CODE-NOTE: `interval` and `timeout` are defined as strings to allow
+  #               setting them to decimal values.
+
+  # Check that `interval` and `timeout` are actually decimals
+  local re='([0-9]+)|[0-9]*\.[0-9]+'
+  if ! [[ "$interval" =~ $re && "$timeout" =~ $re ]]; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  # The ping utility has a minimum required value for the interval (0.2s). We
+  # check that the provided value is higher or equal to this minimum.
+  local comparison
+  comparison="$(echo "$interval<0.2" | bc)"
+  if [[ "$comparison" -eq 1 ]]; then
+    interval='0.2'
+  fi
+
+  local ec
+  sudo ping \
+    -c"$tries" \
+    -i"$interval" \
+    -W"$interval" \
+    -w"$timeout" \
+    "$address" >/dev/null && ec=0 || ec="$?"
+
+  if [[ "$ec" -ne 0 ]]; then
+    if [[ "$ec" -eq 2 ]]; then
+      return "$_HEADSTART_EC_ARGERR"
+    else
+      return "$_HEADSTART_EC_SIGN1"
+    fi
+  fi
+
+  return "$_HEADSTART_EC_OK"
+}
+
+## @fn utilities_ssh()
+## @brief Connects via ssh to the given instance
+## @params instance ***string*** The address or hostname of the instance
+## @params user ***string*** The user to connect as
+## @return ***exit code*** 0 on success
+## @return ***exit code*** 255 on error (ssh's error code)
+##
+## - This function also uses the global dict `DEBUG_LEVELS` to set ansible's
+##   verbosity level.
+function utilities_ssh() {
+  @required [string] instance
+  @required [string] user
+  [integer] port=22
+
+  # TODO remove this in the future
+  if [[ "$TWMN_VERSION_MAJOR" == '2' ]]; then
+    key_name="ssh-key"
+  else
+    key_name="ssh-key.v$TWMN_VERSION_MAJOR"
+  fi
+
+  local identity_file="${utilities_ssh_id_stub-$TWMN_GCE_DIR/$key_name}"
+
+  ssh \
+    "$user"@"$instance" \
+    -i "$identity_file" \
+    -o ConnectTimeout=3 \
+    -o StrictHostKeyChecking=no \
+    -p "$port" \
+    "${DEBUG_LEVELS['ansible_verbose']}"
+}
+
+## @fn utilities_unzip()
+## @brief Extracts a zip file to the specified directory
+## @params file ***string*** The path to the zip file
+## @params extraction_dir ***string*** The directory to extract the zip file
+## into (__default__: the __file__'s location)
+## @return ***exit code*** 0 on success
+## @return ***exit code*** unzip's error codes on errors
+##
+## - The function does not make any assumption about the paths. They can be
+##   either absolute or relative (the function does not determine what the path
+##   is relative to).
+function utilities_unzip() {
+  @required [string] file
+  [string] extraction_dir=''
+
+  if [[ ! -e "$file" ]]; then
+    return "$_HEADSTART_EC_NOTFND"
+  fi
+
+  if ! unzip -t "$file" &>/dev/null; then
+    return "$_HEADSTART_EC_ARGERR"
+  fi
+
+  if [[ -z "$extraction_dir" ]]; then
+    extraction_dir="${file%/*}/"
+  fi
+
+  unzip -o "$file" -d "$extraction_dir"
+}
