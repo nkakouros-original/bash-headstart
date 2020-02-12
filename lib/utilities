@@ -85,14 +85,7 @@ function utilities_ssh() {
   @required [string] user
   [integer] port=22
 
-  # TODO remove this in the future
-  if [[ "$TWMN_VERSION_MAJOR" == '2' ]]; then
-    key_name="ssh-key"
-  else
-    key_name="ssh-key.v$TWMN_VERSION_MAJOR"
-  fi
-
-  local identity_file="${utilities_ssh_id_stub-$TWMN_GCE_DIR/$key_name}"
+  local identity_file="${utilities_ssh_id_stub-$HEADSTART_UTILITIES_SSH_KEY}"
 
   ssh \
     "$user"@"$instance" \
