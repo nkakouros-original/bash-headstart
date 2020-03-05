@@ -22,19 +22,20 @@
 # TODO install hydra, msfconsole, etc only if devel
 
 function core_bootstrap_install_command() {
-  local command
-  command=" \
-    cd '\"'$PWD'\"' \&\& \
-    eval '\"'\$\('\"$PWD/${0##*/}\"' env $_HEADSTART_CMD\)'\"' \
-    \&\& cd - \
-    \>/dev/null"
+  # local command
+  # command=" \
+  #   cd '\"'$PWD'\"' \&\& \
+  #   eval '\"'\$\('\"$PWD/${0##*/}\"' env $_HEADSTART_CMD\)'\"' \
+  #   \&\& cd - \
+  #   \>/dev/null"
 
-  sudo su -c " \
-    echo export HEADSTART_INSTALLATION_DIR='\"'$PWD'\"' \
-    >| /etc/profile.d/$_HEADSTART_CMD.sh \
-  "
+  # sudo su -c " \
+  #   echo export HEADSTART_INSTALLATION_DIR='\"'$PWD'\"' \
+  #   >| /etc/profile.d/$_HEADSTART_CMD.sh \
+  # "
 
-  sudo su -c "echo $command >> /etc/profile.d/$_HEADSTART_CMD.sh"
+  # sudo su -c "echo $command >> /etc/bash_completion.d/$_HEADSTART_CMD.sh"
+  sudo bash -c "$0 env $_HEADSTART_CMD >|/etc/bash_completion.d/$_HEADSTART_CMD.sh"
 }
 
 function core_bootstrap_install_dependencies() {
@@ -285,11 +286,11 @@ function core_bootstrap() {
 
   core_bootstrap_ask_passphrase
   # core_bootstrap_configure "$confirm"
-  core_bootstrap_install_command
   core_bootstrap_git_collab
   core_bootstrap_git_hooks
   core_bootstrap_git_branches
   core_bootstrap_install_dependencies
+  core_bootstrap_install_command
   core_bootstrap_git_lay
 
   local project_bootstrap_function="${0##*/}_bootstrap"

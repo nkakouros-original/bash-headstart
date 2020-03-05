@@ -7,6 +7,7 @@ distro_packages+=(
   "python-pip"
   "awk"
   'sed'
+  'bash-completion'
 )
 
 pip_packages+=(
