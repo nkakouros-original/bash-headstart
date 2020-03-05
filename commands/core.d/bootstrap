@@ -91,6 +91,10 @@ function core_bootstrap_git_collab() {
 
   info "Adding collab git remotes"
 
+  if [[ ! -e "PROJECT_DIR/.gitcollab" ]]; then
+    return
+  fi
+
   local -a remotes
   readarray -t remotes <<<"$(git remote)"
 
@@ -280,7 +284,7 @@ function core_bootstrap() {
   mkdir -p "$_HEADSTART_TMP_DIR"
 
   core_bootstrap_ask_passphrase
-  core_bootstrap_configure "$confirm"
+  # core_bootstrap_configure "$confirm"
   core_bootstrap_install_command
   core_bootstrap_git_collab
   core_bootstrap_git_hooks

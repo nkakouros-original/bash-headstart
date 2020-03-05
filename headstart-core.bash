@@ -102,7 +102,7 @@ function headstart() {
   fi
   unset go_early
 
-  . "$_GO_USE_MODULES" 'core' 'project' 'system'
+  . "$_GO_USE_MODULES" 'project' 'system'
 
   set_standard_outputs
   set_trace "$debug"

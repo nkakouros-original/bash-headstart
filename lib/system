@@ -82,6 +82,8 @@ function show_subcommands() {
   @go.show_subcommands || exit
 }
 
+alias __='parse_args_and_options "$@"; __'
+
 function parse_args_and_options() {
   if [[ " $* " == *' --complete '* ]]; then
     shift
@@ -138,10 +140,15 @@ function get_completions() {
         if (match($0, subs)) {
           if (s=index($0, ", -")) {
             $0=substr($0, s+2)
-            print substr($0, 0, index($0, " "))
+            c=substr($0, 0, index($0, " "))
           } else {
-            print substr($1, index($1, " "))
+            c=substr($1, index($1, " "))
           }
+          s = index(c, "=")
+          if (s > 0) {
+            c=substr(c, 0, index(c, "=")-1)
+          }
+          print c
         }
       }' <<<"$help"
   )"

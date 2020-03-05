@@ -14,6 +14,9 @@ function __() {
   for proj in "${git_projects[@]}"; do
     proj="${proj%.git}"
     proj="${proj#./}"
+
+    info "checking $proj" 0.1 "LightGray"
+
     if ! git -C "$proj" diff-index --quiet HEAD --; then
       info "${proj#$PROJECT_DIR} has changes"
       git -C "$proj" status
