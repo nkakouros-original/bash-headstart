@@ -85,6 +85,10 @@ function core_bootstrap_ask_passphrase() {
 }
 
 function core_bootstrap_git_collab() {
+  if [[ ! -e "$PROJECT_DIR/.gitcollab" ]]; then
+    return
+  fi
+
   info "Adding collab git remotes"
 
   local -a remotes
