@@ -5,7 +5,7 @@ distro_pacman="${distro_pacman:-sudo apt-get install -y}"
 distro_packages+=(
   "python3"
   "python3-pip"
-  "awk"
+  "gawk"
   'sed'
   'bash-completion'
 )
