@@ -285,7 +285,7 @@ function core_bootstrap() {
   mkdir -p "$_HEADSTART_TMP_DIR"
 
   core_bootstrap_ask_passphrase
-  # core_bootstrap_configure "$confirm"
+  core_bootstrap_configure "$confirm"
   core_bootstrap_git_collab
   core_bootstrap_git_hooks
   core_bootstrap_git_branches
