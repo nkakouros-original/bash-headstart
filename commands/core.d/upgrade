@@ -26,7 +26,7 @@ function core_upgrade_run_upgrades() {
 
   core_get_installed_version
 
-  old_version="$TWMN_VERSION"
+  old_version="$(eval "echo \$${_HEADSTART_SCRIPT_NAME~~}_VERSION")"
   new_version="$(core_get_new_version)"
 
   if [[ "$old_version" == "$new_version" ]]; then
