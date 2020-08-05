@@ -10,8 +10,8 @@ from subprocess import call
 
 import yaml
 
-if random.randint(1, 4) != 3:
-    sys.exit()
+#  if random.randint(1, 4) != 3:
+#  sys.exit()
 
 with open("vendor/gilt.developer.yml", "r") as stream:
     config = yaml.safe_load(stream)
