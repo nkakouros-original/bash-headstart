@@ -116,7 +116,7 @@ function get_completions() {
   [integer] word_index=0
   [...rest] rest
 
-  . "$_GO_USE_MODULES" 'helpers/completions' 'complete'
+  . "$_GO_USE_MODULES" 'complete'
 
   # Get completions from the command itself
   if type __completions &>/dev/null; then
