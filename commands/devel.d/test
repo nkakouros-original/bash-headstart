@@ -64,6 +64,10 @@ _test_main() {
   #               worried about, it is not actually an error, just a status
   #               code. We unset therefore the ERR trap here before calling
   #               Bats.
+
+  # Use the standard bats
+  _GO_BATS_URL="https://github.com/bats-core/bats-core/"
+  _GO_BATS_VERSION="master"
   @go.bats_main "$@"
 }
 
