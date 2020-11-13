@@ -19,33 +19,32 @@
 # NOTE: If the <glob> produces errors, or generally doesn't do as you expect,
 # you may need to include it in quotes so it isn't expanded by the shell
 # _before_ executing the {{cmd}} command.
-#
+
 # Taken from custom/vendor/go-script-bash/scripts/test
 
 # Passes all arguments through to `@go.bats_main` from
 # `scripts/vendor/go-script-bash/lib/bats-main`.
 _test_main() {
   declare -x TMPDIR="$_HEADSTART_TMP_DIR"
-  # <<-CODE_NOTE: This environment variable is read by Bats in order to set its
-  #               own temp folder (BATS_TMPDIR variable). The BATS_TMPDIR
-  #               variable is used then to set the variables
-  #               BATS_TEST_ROOTDIR=TEST_GO_ROOTDIR='BATS_TMPDIR/test rootdir'
-  #               which are used throughout go-script's test libraries. In the
-  #               end, both Bats and go-script-bash's test operation use this
-  #               as their temp folder.
+  # This environment variable is read by Bats in order to set its own temp
+  # folder (BATS_TMPDIR variable). The BATS_TMPDIR variable is used then to set
+  # the variables BATS_TEST_ROOTDIR=TEST_GO_ROOTDIR='BATS_TMPDIR/test rootdir'
+  # which are used throughout go-script's test libraries. In the end, both Bats
+  # and go-script-bash's test operation use this as their temp folder.
 
-  declare -x HEADSTART_TEST_FIXTURES="$HEADSTART_TEST_DIR/unit/fixtures"
+  # Where to find the tests to run
+  local test_dir="${_HEADSTART_SCRIPT_NAME~~}_TEST_DIR"
+  declare -x HEADSTART_TEST_FIXTURES="${!test_dir}/unit/fixtures"
 
   # drive the @go.bats_main script
   declare -x _GO_COVERALLS_URL=''
   declare -x _GO_BATS_DIR="$_HEADSTART_VENDOR_DIR/bats"
-  declare -x _GO_BATS_GLOB_ARGS=("scripts/tests/unit" '.bats')
-  # <<-CODE_NOTE: The first argument is the path to search into, the second is
-  #               the file extension to look for. The path has to not include
-  #               spaces due to a bug in go-script-bash, in lib/bats-main. So,
-  #               we declare it as relative here, knowing that it will not
-  #               contain spaces this way.
-  #
+  declare -x _GO_BATS_GLOB_ARGS=("tests/unit" '.bats')
+  # The first argument is the path to search into, the second is the file
+  # extension to look for. The path has to not include spaces due to a bug in
+  # go-script-bash, in lib/bats-main. So, we declare it as relative here,
+  # knowing that it will not contain spaces this way.
+
   declare -x _GO_KCOV_DIR="$_HEADSTART_TMP_DIR/kcov"
   declare -x _GO_BATS_COVERAGE_DIR="$_HEADSTART_TMP_DIR/coverage"
   declare -x _GO_COLLECT_BATS_COVERAGE=''

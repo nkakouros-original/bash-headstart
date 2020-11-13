@@ -2,11 +2,20 @@
 
 # TODO add set -ueo pipefail until stack trace kicks in
 # Path to the project's root directory
-declare -gx PROJECT_DIR
-cd "${0%/*}" || exit "$_HEADSTART_EC_GENERR"
-PROJECT_DIR="$PWD"
 
-declare -gx _HEADSTART_SCRIPT_NAME="${0##*/}"
+declare -gx PROJECT_DIR
+
+# Used for testing
+if [[ -v PROJECT_DIR ]]; then
+  PROJECT_DIR="$PROJECT_DIR"
+else
+  cd "${0%/*}" || exit "$_HEADSTART_EC_GENERR"
+  PROJECT_DIR="$PWD"
+fi
+
+if [[ ! -v _HEADSTART_SCRIPT_NAME ]]; then  # tests may set this directly
+  declare -gx _HEADSTART_SCRIPT_NAME="${0##*/}"
+fi
 
 # Path to bash-headstart's directory
 if [[ "${BASH_SOURCE[0]:0:1}" != '/' ]]; then
@@ -38,7 +47,8 @@ cd "$PROJECT_DIR"
 . "$_HEADSTART_CORE_DIR/headstart-load-libs.bash" "$@" \
   "${_HEADSTART_CORE_DIR#$PROJECT_DIR/}/"{commands,}
 
-declare -gx _HEADSTART_TMP_DIR="${_HEADSTART_TMP_DIR-$PROJECT_DIR/.tmp}"
+tmp_dir="${_HEADSTART_SCRIPT_NAME~~}_TMP_DIR"
+declare -gx _HEADSTART_TMP_DIR="${!tmp_dir}"
 declare -gx _HEADSTART_VENDOR_DIR="${_HEADSTART_CORE_DIR}/vendor"
 
 declare -gx _HEADSTART_CMD="${_GO_CMD##*/}"
