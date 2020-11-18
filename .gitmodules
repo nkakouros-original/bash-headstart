@@ -18,11 +18,10 @@
 	path = vendor/bats-support
 	url = https://github.com/bats-core/bats-support
 	branch = master
-[submodule "vendor/bats-assert"]
-	path = vendor/bats-assert
-	url = https://github.com/bats-core/bats-assert
-	branch = master
 [submodule "vendor/bats-file"]
 	path = vendor/bats-file
 	url = https://github.com/bats-core/bats-file
 	branch = master
+[submodule "vendor/bats-assert"]
+	path = vendor/bats-assert
+	url = https://github.com/nkakouros-forks/bats-assert
