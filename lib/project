@@ -23,7 +23,7 @@ function project_get_gce_project() {
     local ec=0
     grep -E "project ?=" "$_HEADSTART_PROJECT_CONFIG" >/dev/null || ec="$?"
     if [[ "$ec" -ne 0 ]]; then
-      abort "project.conf is corrupted! Rerun '${_HEADSTART_CMD##*/} project setup'"
+      abort "project.conf is corrupted! Delete it and rerun '${_HEADSTART_CMD##*/} core bootstrap'"
     fi
     project="$(grep -E "project ?=" "$_HEADSTART_PROJECT_CONFIG")"
     project="$(echo "$project" | sed -E 's/[\s\t]*project ?= ?([a-zA-Z0-9-]+)/\1/' | tr -d "[:space:]")"

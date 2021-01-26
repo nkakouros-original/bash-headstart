@@ -7,6 +7,7 @@
 #
 # Options:
 #   --update          Update configuration and dependencies
+#   --noninteractive  Do not ask anything
 #
 #
 # Examples:
@@ -63,6 +64,12 @@ function core_bootstrap_git_lay() {
 }
 
 function core_bootstrap_ask_passphrase() {
+  @required [boolean] interactive
+
+  if [[ "$interactive" == "false" ]]; then
+    return
+  fi
+
   . "$_GO_USE_MODULES" 'prompt'
 
   eval "$(ssh-agent -t 300)"
@@ -155,8 +162,6 @@ function core_bootstrap_set_version() {
 
 # TODO do this generic, load prompts from conf file
 function core_bootstrap_configure() {
-  @required [boolean] confirm
-
   . "$_GO_USE_MODULES" "prompt"
 
   local project_prompt
@@ -166,7 +171,7 @@ function core_bootstrap_configure() {
   local old_region
   local old_zone
 
-  if [[ "$confirm" == 'true' && -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
+  if [[ -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
     string="The project has already been configured. "
     string+="Do you want to overwrite the existing configuration?"
     if ! @go.prompt_for_yes_or_no "$string" 'no'; then
@@ -194,8 +199,6 @@ function core_bootstrap_configure() {
     mkdir -p "${_HEADSTART_PROJECT_CONFIG%/*}"
   fi
 
-  echo '[default]' >|"$_HEADSTART_PROJECT_CONFIG"
-
   project_prompt="${project_prompt-ID of Google Cloud project: }"
   local project=''
   @go.prompt_for_input \
@@ -204,6 +207,7 @@ function core_bootstrap_configure() {
     "${old_project-}" \
     '' "${old_project:-required}"
 
+  echo '[default]' >|"$_HEADSTART_PROJECT_CONFIG"
   echo "project = $project" >>"$_HEADSTART_PROJECT_CONFIG"
 
   reuse_prompt="${reuse_prompt-players per world: }"
@@ -255,15 +259,15 @@ function core_bootstrap_lock() {
 
 function core_bootstrap() {
   local update=false
-  local confirm=true
+  local interactive=true
 
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
       --update)
         update=true
         ;;
-      --noconfirm)
-        confirm=false
+      --noninteractive)
+        interactive=false
         ;;
       -*)
         abort "unrecognized option: $1" "$_HEADSTART_EC_USAGE"
@@ -277,6 +281,10 @@ function core_bootstrap() {
 
   . "$_GO_USE_MODULES" 'installation' 'core'
 
+  if [[ ! -r "$_HEADSTART_PROJECT_CONFIG" && "$interactive" == false ]]; then
+    abort "twmn is not configured yet, run bootstrap in interactive mode" "$_HEADSTART_EC_NOTFND"
+  fi
+
   if [[ "$(get_installation_status)" == 'bootstrapped' && "$update" == 'false' ]]; then
     warn 'project is already bootstrapped, nothing to do'
     exit
@@ -284,8 +292,11 @@ function core_bootstrap() {
 
   mkdir -p "$_HEADSTART_TMP_DIR"
 
-  core_bootstrap_ask_passphrase
-  core_bootstrap_configure "$confirm"
+  if [[ "$interactive" == true ]]; then
+    core_bootstrap_ask_passphrase
+    core_bootstrap_configure
+  fi
+
   core_bootstrap_git_collab
   core_bootstrap_git_hooks
   core_bootstrap_git_branches

@@ -12,12 +12,12 @@ function get_installation_status() {
   local project_installation_status
   project_installation_status='uninstalled'
 
-  if [[ -f "$_HEADSTART_CORE_LOCK" ]]; then
+  if [[ -r "$_HEADSTART_CORE_LOCK" && -r "$_HEADSTART_PROJECT_CONFIG" ]]; then
     while read -s line; do
       if [[ "$line" =~ ^status=(.*) ]]; then
         project_installation_status="${BASH_REMATCH[1]}"
       fi
-    done < "$_HEADSTART_CORE_LOCK"
+    done <"$_HEADSTART_CORE_LOCK"
   fi
 
   echo $project_installation_status
@@ -68,8 +68,8 @@ download_tarball() {
   printf "Downloading from '%s'...\n" "$url"
   mkdir -p "$install_dir"
 
-  if ! "${download_cmd[@]}" | tar -xzf - -C /tmp/ ||
-    [[ "${PIPESTATUS[0]}" -ne '0' ]]; then
+  if ! "${download_cmd[@]}" | tar -xzf - -C /tmp/ \
+    || [[ "${PIPESTATUS[0]}" -ne '0' ]]; then
     printf "Failed to download from '%s'.\n" "$url" >&2
     return 1
   elif ! mv "/tmp/$unpacked_dir/"* "$install_dir"; then
