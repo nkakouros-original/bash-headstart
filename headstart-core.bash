@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 
 # TODO add set -ueo pipefail until stack trace kicks in
-# Path to the project's root directory
 
+# The code below is not in a function as variables, functions, etc defined here
+# and in the sourced files need to be accessible in the global scope.
+
+# Path to the project's root directory
 declare -gx PROJECT_DIR
 
 # Used for testing
@@ -63,12 +66,7 @@ declare -x GO_TAB_COMPLETIONS_PATTERN=''
 . "$_GO_USE_MODULES" 'core'
 
 core_get_installed_version
-
-if ! [[ "${1-}" == 'core' && "${2-}" == 'bootstrap' ]]; then
-  core_parse_project_config
-  # When bootstrapping, the project config does not need to be read, since it is
-  # create by bootstrap itself.
-fi
+core_parse_project_config
 
 function headstart() {
   local debug=false

@@ -61,6 +61,11 @@ function core_check_upgrades() {
 }
 
 function core_parse_project_config() {
+  if [[ ! -r "$_HEADSTART_PROJECT_CONFIG" ]]; then
+    # This will happen if we run 'core bootstrap' and this function gets called.
+    return
+  fi
+
   local conf
   local value
 
