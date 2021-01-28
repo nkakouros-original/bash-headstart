@@ -47,10 +47,12 @@ cd "$PROJECT_DIR"
 . "$_HEADSTART_CORE_DIR/headstart-load-libs.bash" "$@" \
   "${_HEADSTART_CORE_DIR#$PROJECT_DIR/}/"{commands,}
 
+
 tmp_dir="${_HEADSTART_SCRIPT_NAME~~}_TMP_DIR"
 declare -gx _HEADSTART_TMP_DIR="${!tmp_dir}"
 declare -gx _HEADSTART_VENDOR_DIR="${_HEADSTART_CORE_DIR}/vendor"
 
+declare -gx HEADSTART_RESOURCES_DIR="${HEADSTART_RESOURCES_DIR-resources}"
 declare -gx _HEADSTART_CMD="${_GO_CMD##*/}"
 declare -gx _HEADSTART_PROJECT_CONFIG="${HEADSTART_PROJECT_CONFIG-data/config/project.conf}"
 declare -gx _HEADSTART_CORE_LOCK="${HEADSTART_CORE_LOCK-data/config/.core.lock}"

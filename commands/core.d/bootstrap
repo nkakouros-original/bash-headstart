@@ -63,35 +63,6 @@ function core_bootstrap_git_lay() {
   fi
 }
 
-function core_bootstrap_ask_passphrase() {
-  @required [boolean] interactive
-
-  if [[ "$interactive" == "false" ]]; then
-    return
-  fi
-
-  . "$_GO_USE_MODULES" 'prompt'
-
-  eval "$(ssh-agent -t 300)"
-
-  # TODO do this generic in a loop
-  @go.prompt_for_input \
-    github_com_key \
-    'github.com key path: ' \
-    "$HOME/.ssh/id_rsa"
-
-  ssh-add "$github_com_key"
-
-  @go.prompt_for_input \
-    kth_github_key \
-    'KTH github key path: ' \
-    "$HOME/.ssh/id_rsa"
-
-  if [[ "$kth_github_key" != "$github_com_key" ]]; then
-    ssh-add "$kth_github_key"
-  fi
-}
-
 function core_bootstrap_git_collab() {
   if [[ ! -e "$PROJECT_DIR/.gitcollab" ]]; then
     return
@@ -177,80 +148,21 @@ function core_bootstrap_configure() {
     if ! @go.prompt_for_yes_or_no "$string" 'no'; then
       return
     fi
-
-    [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ project\ =\ ([^[:space:]]+) ]]
-    old_project="${BASH_REMATCH[1]}"
-    project_prompt="ID of Google Cloud project (old value is default): "
-
-    [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ world_reuse\ =\ ([^[:space:]]+) ]]
-    old_reuse="${BASH_REMATCH[1]}"
-    reuse_prompt="players per world (old value is default): "
-
-    [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ google_cloud_region\ =\ ([^[:space:]]+) ]]
-    old_region="${BASH_REMATCH[1]}"
-    region_prompt="google cloud default region (old value is default): "
-
-    [[ "$(<"$_HEADSTART_PROJECT_CONFIG")" =~ google_cloud_zone\ =\ ([^[:space:]]+) ]]
-    old_zone="${BASH_REMATCH[1]}"
-    zone_prompt="google cloud default zone (old value is default): "
   fi
 
   if [[ ! -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
     mkdir -p "${_HEADSTART_PROJECT_CONFIG%/*}"
+
+    if [[ -r "$HEADSTART_RESOURCES_DIR/project.dest.conf" ]]; then
+      cp "$HEADSTART_RESOURCES_DIR/project.dest.conf" "$_HEADSTART_PROJECT_CONFIG"
+    fi
   fi
 
-  project_prompt="${project_prompt-ID of Google Cloud project: }"
-  local project=''
-  @go.prompt_for_input \
-    "project" \
-    "$project_prompt" \
-    "${old_project-}" \
-    '' "${old_project:-required}"
-
-  echo '[default]' >|"$_HEADSTART_PROJECT_CONFIG"
-  echo "project = $project" >>"$_HEADSTART_PROJECT_CONFIG"
-
-  reuse_prompt="${reuse_prompt-players per world: }"
-  local world_reuse=''
-  while [[ ! "$world_reuse" =~ ^[0-9]+$ ]]; do
-    @go.prompt_for_input \
-      "world_reuse" \
-      "$reuse_prompt" \
-      "${old_reuse-}" \
-      '' "${old_reuse:-required}"
-  done
-
-  echo "world_reuse = $world_reuse" >>"$_HEADSTART_PROJECT_CONFIG"
-
-  region_prompt="${region_prompt-google cloud default region: }"
-  declare region=''
-  @go.prompt_for_input \
-    "region" \
-    "$region_prompt" \
-    "${old_region-europe-west1}" \
-    ''
-
-  echo "google_cloud_region = $region" >>"$_HEADSTART_PROJECT_CONFIG"
-
-  zone_prompt="${zone_prompt-google cloud default zone: }"
-  declare zone=''
-  @go.prompt_for_input \
-    "zone" \
-    "$zone_prompt" \
-    "${old_zone-europe-west1-b}" \
-    ''
-
-  echo "google_cloud_zone = $zone" >>"$_HEADSTART_PROJECT_CONFIG"
-
-  # TODO do not hardcode this
-  echo 'overlord_email = nkak@kth.se' >>"$_HEADSTART_PROJECT_CONFIG"
-
-  . "$_GO_USE_MODULES" 'prompt'
-
-  info "Select your role in the project:"
-  local PS3='Select role: '
-  @go.select_option 'user_role' 'developer' 'TA'
-  echo "user_role = $user_role" >>"$_HEADSTART_PROJECT_CONFIG"
+  if [[ -v EDITOR ]]; then
+    "$EDITOR" "$_HEADSTART_PROJECT_CONFIG"
+  else
+    nano "$_HEADSTART_PROJECT_CONFIG"
+  fi
 }
 
 function core_bootstrap_lock() {
@@ -293,7 +205,6 @@ function core_bootstrap() {
   mkdir -p "$_HEADSTART_TMP_DIR"
 
   if [[ "$interactive" == true ]]; then
-    core_bootstrap_ask_passphrase
     core_bootstrap_configure
   fi
 
