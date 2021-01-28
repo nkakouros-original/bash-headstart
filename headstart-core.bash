@@ -63,7 +63,12 @@ declare -x GO_TAB_COMPLETIONS_PATTERN=''
 . "$_GO_USE_MODULES" 'core'
 
 core_get_installed_version
-core_parse_project_config
+
+if ! [[ "${1-}" == 'core' && "${2-}" == 'bootstrap' ]]; then
+  core_parse_project_config
+  # When bootstrapping, the project config does not need to be read, since it is
+  # create by bootstrap itself.
+fi
 
 function headstart() {
   local debug=false
