@@ -63,6 +63,7 @@ declare -x GO_TAB_COMPLETIONS_PATTERN=''
 . "$_GO_USE_MODULES" 'core'
 
 core_get_installed_version
+core_parse_project_config
 
 function headstart() {
   local debug=false
@@ -114,7 +115,7 @@ function headstart() {
   fi
   unset go_early
 
-  . "$_GO_USE_MODULES" 'project' 'system'
+  . "$_GO_USE_MODULES" 'system'
 
   set_standard_outputs
   set_trace "$debug"
@@ -146,18 +147,10 @@ function headstart() {
 
   core_check_upgrades
 
-  # TODO do not explicitly create these. Parse the config and expose the
-  # variables in bash-headstart
-  declare -gx GCE_PROJECT_NAME
-  declare -gx WORLD_REUSE
-
   # TODO don't rely on this returning empty strings. When first installing,
   # `core bootstrap` will execute this returning nothing. Instead handle that
   # case better and have the function return an error code if it doesn't find
   # what it needs.
-  GCE_PROJECT_NAME="$(project_get_gce_project)"
-  WORLD_REUSE="$(project_get_world_reuse)"
-
   if [[ "${rest[*]}" != '' && "${rest[0]}" == 'core' ]]; then
     if [[ "${#rest[*]}" -ge 2 && "${rest[1]}" == 'bootstrap' ]]; then
       @go "${rest[@]}"

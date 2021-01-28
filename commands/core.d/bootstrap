@@ -52,12 +52,9 @@ function core_bootstrap_install_dependencies() {
 }
 
 function core_bootstrap_git_lay() {
-  . "$_GO_USE_MODULES" 'project'
-  local user_role="$(project_get_user_role)"
-
   info 'layering dependencies with gilt...'
-  if [[ -e "$PROJECT_DIR/vendor/gilt.$user_role.yml" ]]; then
-    gilt --config "$PROJECT_DIR/vendor/gilt.$user_role.yml" overlay
+  if [[ -e "$PROJECT_DIR/vendor/gilt.$CONF_USER_ROLE.yml" ]]; then
+    gilt --config "$PROJECT_DIR/vendor/gilt.$CONF_USER_ROLE.yml" overlay
   elif [[ -e "$PROJECT_DIR/vendor/gilt.yml" ]]; then
     gilt --config "$PROJECT_DIR/vendor/gilt.yml" overlay
   fi
