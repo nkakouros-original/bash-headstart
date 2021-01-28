@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #
 # This script will push gilt projects to any mirrors defined in
-# gilt.developer.yml.
+# gilt.yml.
 
 import os
 import random
@@ -26,7 +26,5 @@ for c in config:
                 msg = msg.format(c["dst"], remote["url"])
                 print(msg)
                 os.chdir(c["dst"])
-                call(
-                    ["git", "push", "--no-verify", "--all", "-f", remote["url"]]
-                )
+                call(["git", "push", "--no-verify", "--all", "-f", remote["url"]])
                 os.chdir(old_dir)
