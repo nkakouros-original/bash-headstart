@@ -51,7 +51,7 @@ _test_main() {
   # TODO see if these paths actually work
   declare -x _GO_BATS_COVERAGE_INCLUDE=('headstart' 'commands' 'lib')
 
-  declare -x TWMN_TEST_COMMON_ENV="$TWMN_TEST_DIR/unit/common/environment.bash"
+  declare -x FIVEG_TEST_COMMON_ENV="$FIVEG_TEST_DIR/unit/common/environment.bash"
   # This is meant to be used by test files to load the common environment.
 
   . "$_GO_USE_MODULES" 'bats-main'
