@@ -194,7 +194,7 @@ function core_bootstrap() {
   . "$_GO_USE_MODULES" 'installation' 'core'
 
   if [[ ! -r "$_HEADSTART_PROJECT_CONFIG" && "$interactive" == false ]]; then
-    abort "twmn is not configured yet, run bootstrap in interactive mode" "$_HEADSTART_EC_NOTFND"
+    abort "fiveg is not configured yet, run bootstrap in interactive mode" "$_HEADSTART_EC_NOTFND"
   fi
 
   if [[ "$(get_installation_status)" == 'bootstrapped' && "$update" == 'false' ]]; then
