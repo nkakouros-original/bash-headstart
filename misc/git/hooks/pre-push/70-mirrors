@@ -13,7 +13,7 @@ import yaml
 #  if random.randint(1, 4) != 3:
 #  sys.exit()
 
-with open("vendor/gilt.developer.yml", "r") as stream:
+with open("vendor/gilt.yml", "r") as stream:
     config = yaml.safe_load(stream)
 
 old_dir = os.getcwd()
