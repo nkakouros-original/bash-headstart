@@ -51,20 +51,6 @@ import util/tryCatch
 import util/variable
 import util/namedParameters
 
-# TODO do I need this?
-# if [[ "${_GO_BATS_DIR-unset}" == 'unset' ]]; then
-import util/exception
-# fi
-# <<-CODE-NOTE: When we are testing the project's code, we want for instance to
-#               check that a function returns with a specific code in case of
-#               an error. In these cases, we do not want this error code to
-#               trigger the stack trace that the `util/exception` code prints
-#               as it would pollute the test output. So, we only import this
-#               module when not testing. To check if we are in test mode or
-#               not, we check the existence of a variable that is set only when
-#               testing. We chose randomly `_GO_BATS_DIR` that is set in
-#               `devel/test`.
-
 # CUSTOM LIBS
 # ===========
 # TODO source directly due to variable scoping

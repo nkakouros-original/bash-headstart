@@ -69,6 +69,7 @@ core_get_installed_version
 core_parse_project_config
 
 function headstart() {
+  local trace=false
   local debug=false
   local verbosity=''
   local -a rest
@@ -78,7 +79,10 @@ function headstart() {
 
   while [[ "$#" -gt 0 ]]; do
     case "$1" in
-      -d | --debug)
+      -d | --trace)
+        trace=true
+        ;;
+      -dd | --debug)
         debug=true
         ;;
       -v*)
@@ -99,6 +103,19 @@ function headstart() {
     esac
     shift
   done
+
+  # This was originally in headstart-load-libs (as all uses of `import`) but
+  # was moved here in order to put the trace behind the `-d` cli option.
+  if [[ "$trace" == 'true' && "${_GO_BATS_DIR-unset}" == 'unset' ]]; then
+    import util/exception
+  fi
+  # When we are testing the project's code, we want for instance to check that
+  # a function returns with a specific code in case of an error. In these cases,
+  # we do not want this error code to trigger the stack trace that the
+  # `util/exception` code prints as it would pollute the test output. So, we
+  # only import this module when not testing. To check if we are in test mode or
+  # not, we check the existence of a variable that is set only when testing. We
+  # chose randomly `_GO_BATS_DIR` that is set in `devel/test`.
 
   . "$_GO_USE_MODULES" 'installation' 'aliases'
 
@@ -149,23 +166,6 @@ function headstart() {
   fi
 
   core_check_upgrades
-
-  # TODO don't rely on this returning empty strings. When first installing,
-  # `core bootstrap` will execute this returning nothing. Instead handle that
-  # case better and have the function return an error code if it doesn't find
-  # what it needs.
-  if [[ "${rest[*]}" != '' && "${rest[0]}" == 'core' ]]; then
-    if [[ "${#rest[*]}" -ge 2 && "${rest[1]}" == 'bootstrap' ]]; then
-      @go "${rest[@]}"
-      return
-    fi
-  fi
-
-  if [[ "${rest[*]}" == '' ]]; then
-    trap - ERR
-    @go
-    return
-  fi
 
   @go "${rest[@]}"
 }
