@@ -39,7 +39,7 @@ trap system_load_outro EXIT
 ## doing TAB auto-completion in Bash. Then, the
 ## '$_HEADSTART_VENDOR_DIR/go-bash-script/libexec/complete' functions are called in an
 ## execution sequence that includes 4, 5 commands that return 1 when there is no
-## candidate for completion (eg 'headstart world f<TAB>') . This causes Bash
+## candidate for completion (eg 'headstart build f<TAB>') . This causes Bash
 ## Infinity to trigger exception handling and print execution stacks in the
 ## command line. Instead, nothing should be printed to the user. One solution
 ## would be to patch go-script-bash's auto-completion to not return 1 if there is
