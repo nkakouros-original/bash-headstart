@@ -161,5 +161,11 @@ function headstart() {
     fi
   fi
 
+  if [[ "${rest[*]}" == '' ]]; then
+    trap - ERR
+    @go
+    return
+  fi
+
   @go "${rest[@]}"
 }
