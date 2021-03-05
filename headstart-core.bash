@@ -153,10 +153,10 @@ function headstart() {
     if [[ "${rest[*]}" == 'help core bootstrap' ]]; then
       @go "${rest[@]}"
       return
-    elif [[ "${rest[*]}" =~ ^core\ bootstrap$ && "$print_help" == 'true' ]]; then
+    elif [[ "${rest[*]}" =~ ^core\ bootstrap\ ?.*$ && "$print_help" == 'true' ]]; then
       @go help "${rest[@]}"
       return
-    elif [[ "${rest[*]}" =~ ^core\ bootstrap\.*$ ]]; then
+    elif [[ "${rest[*]}" =~ ^core\ bootstrap\ ?.*$ ]]; then
       @go "${rest[@]}"
       return
     else
