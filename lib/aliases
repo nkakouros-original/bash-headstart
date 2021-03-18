@@ -3,4 +3,8 @@
 GO_ALIAS_CMDS_EXTRA=('nvim' 'vim' 'nano' "${HEADSTART_ALIAS_CMDS_EXTRA[@]}")
 GO_ALIAS_EXPAND_CMDS=("${HEADSTART_ALIAS_EXPAND_CMDS[@]}")
 
-alias sudo='sudo ' # https://askubuntu.com/questions/22037
+if [[ "$EUID" -eq 0 ]]; then
+  alias sudo='sudo ' # https://askubuntu.com/questions/22037
+else
+  alias sudo=' ' # https://askubuntu.com/questions/22037
+fi
