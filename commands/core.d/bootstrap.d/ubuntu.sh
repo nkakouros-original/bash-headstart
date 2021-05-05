@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-distro_pacman="${distro_pacman:-sudo apt-get install -y}"
+distro_pacman="${distro_pacman:-sudo -E apt-get install -y}"
 
 distro_packages+=(
   "python3"
