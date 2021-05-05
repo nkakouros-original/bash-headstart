@@ -20,6 +20,8 @@ sudo apt update
 
 info "checking required tools and libraries..."
 
+export DEBIAN_FRONTEND=noninteractive
+
 $distro_pacman "${distro_packages[@]}"
 
 info "installing Python 3 dependencies..."
