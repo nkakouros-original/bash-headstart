@@ -50,12 +50,6 @@ cd "$PROJECT_DIR"
 . "$_HEADSTART_CORE_DIR/headstart-load-libs.bash" "$@" \
   "${_HEADSTART_CORE_DIR#$PROJECT_DIR/}/"{commands,}
 
-
-tmp_dir="${_HEADSTART_SCRIPT_NAME~~}_TMP_DIR"
-declare -gx _HEADSTART_TMP_DIR="${!tmp_dir}"
-declare -gx _HEADSTART_VENDOR_DIR="${_HEADSTART_CORE_DIR}/vendor"
-
-declare -gx HEADSTART_RESOURCES_DIR="${HEADSTART_RESOURCES_DIR-resources}"
 declare -gx _HEADSTART_CMD="${_GO_CMD##*/}"
 declare -gx _HEADSTART_PROJECT_CONFIG="${HEADSTART_PROJECT_CONFIG-data/config/project.conf}"
 declare -gx _HEADSTART_CORE_LOCK="${HEADSTART_CORE_LOCK-data/config/.core.lock}"
@@ -64,9 +58,17 @@ declare -x _GO_HELP_HIJACK=true
 declare -x GO_TAB_COMPLETIONS_PATTERN=''
 
 . "$_GO_USE_MODULES" 'core'
-
 core_get_installed_version
-core_parse_project_config
+
+function headstart_bootstrap() {
+  tmp_dir="${_HEADSTART_SCRIPT_NAME~~}_TMP_DIR"
+  declare -gx _HEADSTART_TMP_DIR="${!tmp_dir}"
+  declare -gx _HEADSTART_VENDOR_DIR="${_HEADSTART_CORE_DIR}/vendor"
+
+  declare -gx HEADSTART_RESOURCES_DIR="${HEADSTART_RESOURCES_DIR-resources}"
+
+  core_parse_project_config
+}
 
 function headstart() {
   local trace=false
@@ -137,7 +139,6 @@ function headstart() {
 
   . "$_GO_USE_MODULES" 'system'
 
-  set_standard_outputs
   set_trace "$debug"
   set_debug_levels "$verbosity"
   unset verbosity

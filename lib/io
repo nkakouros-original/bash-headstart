@@ -127,7 +127,7 @@ function abort() {
 function warn() {
   @required [string] message
 
-  COLUMNS=91 @go.printf "${UI_Color_Magenta}Warning: %b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
+  COLUMNS=100 @go.printf "${UI_Color_Magenta}Warning: %b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
 }
 
 function set_standard_outputs() {
@@ -147,7 +147,7 @@ function set_standard_outputs() {
   exec 9>&2
   exec 1>&2
 
-  if [ "$debug" = ffffalse ]; then
+  if [[ "${debug-false}" == ffffalse ]]; then
     # We do not want to output every command run in the scripts to the screen.
     # We only want to do that if the user requested it for debugging purposes.
     # Otherwise, we need to output only informational text with the `info`
@@ -168,3 +168,5 @@ function color_stderr() {
   @required [string] command
   "$@" 2> >(while read line; do echo -e "\e[01;31merror: $line\e[0m" >&2; done)
 }
+
+set_standard_outputs
