@@ -10,7 +10,7 @@ again. Bash Headstart contains the common parts of these projects.
 ```
 git submodule add https://github.com/tterranigma/bash-headstart scripts/vendor bash-headstart -b master
 ```
-2. Run `git submodule init --recusrive path/to/bash-headstart-submodule`
+2. Run `git submodule init --recursive path/to/bash-headstart-submodule`
 3. Copy `headstart-template` to the root of your project and rename it to fit
    your project.
 4. Run `eval "$(./renamed-headstart-template env -)"`.
