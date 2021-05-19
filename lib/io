@@ -127,7 +127,7 @@ function abort() {
 function warn() {
   @required [string] message
 
-  COLUMNS=100 @go.printf "${UI_Color_Magenta}Warning: %b%s${UI_Color_Default}\n" "$message" >&"${STDERR}"
+  COLUMNS=100 @go.printf "${UI_Color_Magenta}Warning: %b%s${UI_Color_Default}\n" "$message" >&"$"{STDERR:-2}
 }
 
 function set_standard_outputs() {
