@@ -91,8 +91,10 @@ function parse_args_and_options() {
     exit
   fi
 
+  export __headstart_system_parsing_help=1
   help="$("$0" "${_GO_CMD_NAME[@]}" -h 2>&1)"
   help="${help//"$_GO_CMD" "${_GO_CMD_NAME[@]:0:${#_GO_CMD_NAME[@]}-1}"/}"
+  unset __headstart_system_parsing_help
 
   local ec=0
   eval "$(
