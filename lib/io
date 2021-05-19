@@ -168,5 +168,3 @@ function color_stderr() {
   @required [string] command
   "$@" 2> >(while read line; do echo -e "\e[01;31merror: $line\e[0m" >&2; done)
 }
-
-set_standard_outputs

@@ -139,6 +139,7 @@ function headstart() {
 
   . "$_GO_USE_MODULES" 'system'
 
+  set_standard_outputs
   set_trace "$debug"
   set_debug_levels "$verbosity"
   unset verbosity
