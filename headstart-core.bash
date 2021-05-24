@@ -8,12 +8,15 @@
 # Path to the project's root directory
 declare -gx PROJECT_DIR
 
+# The `SHELL` env variable is not supported by every shell and bash sets it
+# only if it is not set already. To be sure it exists, it is set here.
+[[ ! -v BASH ]] || export SHELL=$BASH
+
 # Used for testing
 if [[ -v PROJECT_DIR ]]; then
   PROJECT_DIR="$PROJECT_DIR"
 else
-  cd "${0%/*}" || exit "$_HEADSTART_EC_GENERR"
-  PROJECT_DIR="$PWD"
+  declare -gx PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 fi
 
 if [[ ! -v _HEADSTART_SCRIPT_NAME ]]; then  # tests may set this directly
