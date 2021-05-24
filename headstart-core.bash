@@ -96,7 +96,6 @@ function headstart() {
       complete | env)
         # <<-CODE_NOTE: This is matched when autocompletion occurs or when using
         #               `eval "$(./headstart env -)"`
-        go_early=true
         rest+=("$1")
         ;;
       *)
@@ -121,21 +120,18 @@ function headstart() {
 
   . "$_GO_USE_MODULES" 'installation' 'aliases'
 
-  if [[ "$go_early" == 'true' ]]; then
-    case "${rest[0]}" in
-      'env')
+  case "${rest[0]}" in
+    'env')
+      @go "${rest[@]}"
+      return
+      ;;
+    'complete')
+      if [[ "$(get_installation_status)" == 'bootstrapped' ]]; then
         @go "${rest[@]}"
-        return
-        ;;
-      'complete')
-        if [[ "$(get_installation_status)" == 'bootstrapped' ]]; then
-          @go "${rest[@]}"
-        fi
-        return
-        ;;
-    esac
-  fi
-  unset go_early
+      fi
+      return
+      ;;
+  esac
 
   . "$_GO_USE_MODULES" 'system'
 
