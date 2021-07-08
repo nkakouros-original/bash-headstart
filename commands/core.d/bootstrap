@@ -150,8 +150,8 @@ function core_bootstrap_configure() {
   if [[ ! -e "$_HEADSTART_PROJECT_CONFIG" ]]; then
     mkdir -p "${_HEADSTART_PROJECT_CONFIG%/*}"
 
-    if [[ -r "$HEADSTART_RESOURCES_DIR/project.dest.conf" ]]; then
-      cp "$HEADSTART_RESOURCES_DIR/project.dest.conf" "$_HEADSTART_PROJECT_CONFIG"
+    if [[ -r "$HEADSTART_RESOURCES_DIR/templates/project.conf" ]]; then
+      cp "$HEADSTART_RESOURCES_DIR/templates/project.conf" "$_HEADSTART_PROJECT_CONFIG"
     fi
   fi
 
