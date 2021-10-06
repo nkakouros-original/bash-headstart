@@ -154,7 +154,7 @@ function get_completions() {
         }
       }' <<<"$help"
   )"
-  c=("${c[@]%[[:space:]]}")
+  c=(" ${c[@]%[[:space:]]} ")
 
   if [[ "${#rest[@]}" -gt 0 ]]; then
     unset "rest[-1]"

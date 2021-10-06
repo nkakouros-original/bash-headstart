@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 
-distro_pacman="${distro_pacman:-sudo pacman -S --noconfirm}"
+if which yaourt &>/dev/null; then
+  distro_pacman="${distro_pacman:-yaourt -S --noconfirm}"
+  distro_update_cmd="${distro_update_cmd:-yaourt -Syyuu --aur --noconfirm --devel}"
+elif which paru &>/dev/null; then
+  distro_pacman="${distro_pacman:-paru -S --noconfirm}"
+  distro_update_cmd="${distro_pacman:-paru -Syyuu --noconfirm}"
+else
+  distro_pacman="${distro_pacman:-sudo pacman -S --noconfirm}"
+  distro_update_cmd="${distro_update_cmd:-sudo pacman -Syyuu --noconfirm}"
+fi
 
 distro_packages+=(
   "python"

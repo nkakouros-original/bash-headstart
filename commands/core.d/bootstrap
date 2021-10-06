@@ -208,7 +208,6 @@ function core_bootstrap() {
   core_parse_project_config
   core_bootstrap_git_collab
   # core_bootstrap_git_hooks
-  core_bootstrap_git_branches
   core_bootstrap_install_dependencies
   core_bootstrap_install_command
   core_bootstrap_git_lay
