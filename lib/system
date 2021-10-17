@@ -4,6 +4,7 @@ set -o nounset          # emits error if an undefined variable is used
 set -o pipefail         # emits error if a command in a pipe chain fails
 shopt -s expand_aliases # allows the use of aliases in scripts
 shopt -s extglob        # enables extended globbing, eg "@(aa|bb)"
+shopt -s globstar       # expands `**` to any file/dir
 
 ## @fn system_load_outro()
 ## @brief Loads the outro script
