@@ -13,7 +13,7 @@ distro_packages+=(
 pip_packages+=(
   # 'python-gilt'
   'git+http://github.com/coala/git-url-parse@1.1'
-  'git+git://github.com/nkakouros-forks/gilt@all'
+  'git+http://github.com/nkakouros-forks/gilt@all'
 )
 
 sudo apt update
