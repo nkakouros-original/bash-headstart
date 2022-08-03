@@ -12,7 +12,7 @@ distro_packages+=(
 
 pip_packages+=(
   # 'python-gilt'
-  'git+git://github.com/retr0h/git-url-parse@1.1'
+  'http://github.com/coala/git-url-parse@1.1'
   'git+git://github.com/nkakouros-forks/gilt@all'
 )
 
