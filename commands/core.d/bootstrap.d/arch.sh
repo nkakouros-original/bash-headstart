@@ -21,7 +21,7 @@ distro_packages+=(
 
 pip_packages+=(
   # 'python-gilt'
-  'git+git://github.com/nkakouros-forks/gilt@all'
+  'git+https://github.com/nkakouros-forks/gilt.git@all'
 )
 
 info "checking required tools and libraries..."

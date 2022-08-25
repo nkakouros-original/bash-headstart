@@ -569,6 +569,7 @@ function bash_string_join() {
 function bash_array_search() {
   local __array1="${1-}"
   local needle="${2-}"
+  local return_index="${3-false}"
 
   __array1="$__array1[@]"
 
@@ -583,5 +584,6 @@ function bash_array_search() {
     i=i+1
   done
 
-  echo "$key"
+  [[ "$return_index" == true ]] && echo "$key"
+  [[ "$key" -eq -1 ]] && return 1 || return 0
 }
