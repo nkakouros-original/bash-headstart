@@ -66,6 +66,8 @@ core_get_installed_version
 function headstart_bootstrap() {
   tmp_dir="${_HEADSTART_SCRIPT_NAME~~}_TMP_DIR"
   declare -gx _HEADSTART_TMP_DIR="${!tmp_dir}"
+  config_dir="${_HEADSTART_SCRIPT_NAME~~}_CONFIG_DIR"
+  declare -gx _HEADSTART_CONFIG_DIR="${!config_dir}"
   declare -gx _HEADSTART_VENDOR_DIR="${_HEADSTART_CORE_DIR}/vendor"
 
   declare -gx HEADSTART_RESOURCES_DIR="${HEADSTART_RESOURCES_DIR-resources}"

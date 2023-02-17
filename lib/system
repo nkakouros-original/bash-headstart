@@ -84,7 +84,21 @@ function show_subcommands() {
   @go.show_subcommands || exit
 }
 
-alias __='parse_args_and_options "$@"; __'
+alias __='parse_args_and_options "$@"; set_plugin_env; __'
+
+function set_plugin_env() {
+  if [[ "$__go_cmd_path" =~ .+/plugins/.+ ]]; then
+    go_plugin_name="${__go_cmd_path#$TWMN_COMMANDS_DIR/plugins/}"
+    go_plugin_name="${go_plugin_name%%/*}"
+    go_plugin_path="$TWMN_COMMANDS_DIR/plugins/$go_plugin_name"
+
+    export go_plugin_name go_plugin_path
+
+    if [[ -f "$_HEADSTART_CONFIG_DIR/$go_plugin_name.conf" ]]; then
+      . "$_HEADSTART_CONFIG_DIR/$go_plugin_name.conf"
+    fi
+  fi
+}
 
 function parse_args_and_options() {
   if [[ " $* " == *' --complete '* ]]; then
