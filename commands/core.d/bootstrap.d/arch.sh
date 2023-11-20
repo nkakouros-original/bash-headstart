@@ -2,10 +2,10 @@
 
 if which yaourt &>/dev/null; then
   distro_pacman="${distro_pacman:-yaourt -S --noconfirm}"
-  distro_update_cmd="${distro_update_cmd:-yaourt -Syyuu --aur --noconfirm --devel}"
+  distro_update_cmd="${distro_update_cmd:-yaourt -Syy --aur --noconfirm --devel}"
 elif which paru &>/dev/null; then
   distro_pacman="${distro_pacman:-paru -S --noconfirm}"
-  distro_update_cmd="${distro_pacman:-paru -Syyuu --noconfirm}"
+  distro_update_cmd="${distro_pacman:-paru -Syy --noconfirm}"
 else
   distro_pacman="${distro_pacman:-sudo pacman -S --noconfirm}"
   distro_update_cmd="${distro_update_cmd:-sudo pacman -Syyuu --noconfirm}"
@@ -30,4 +30,4 @@ $distro_pacman "${distro_packages[@]}"
 
 info "installing Python 3 dependencies..."
 
-sudo pip3 install "${pip_packages[@]}"
+sudo pip3 install --break-system-packages "${pip_packages[@]}"

@@ -70,7 +70,7 @@ function core_parse_project_config() {
   local value
 
   while read -s line; do
-    if [[ "$line" =~ ^#|\s*\[ ]]; then
+    if [[ "$line" =~ ^(#|\s*\[|$) ]]; then
       continue
     fi
 
@@ -79,6 +79,6 @@ function core_parse_project_config() {
     value="${line#*=}"
     value="${value# }"
 
-    eval "declare -gx CONF_${conf~~}='$value'"
+    eval 'declare -gx CONF_'${conf~~}'='"$value"
   done <"$_HEADSTART_PROJECT_CONFIG"
 }
