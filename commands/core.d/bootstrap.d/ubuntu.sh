@@ -12,8 +12,8 @@ distro_packages+=(
 
 pip_packages+=(
   # 'python-gilt'
-  # 'git+http://github.com/coala/git-url-parse@1.1'
-  # 'git+http://github.com/nkakouros-forks/gilt@all'
+  'git+http://github.com/coala/git-url-parse@1.1'
+  'git+http://github.com/nkakouros-forks/gilt@all'
 )
 
 sudo apt update
@@ -26,5 +26,4 @@ $distro_pacman "${distro_packages[@]}"
 
 info "installing Python 3 dependencies..."
 
-# sudo pip3 install "${pip_packages[@]}"
-set +x
+sudo pip3 install --break-system-packages "${pip_packages[@]}"
