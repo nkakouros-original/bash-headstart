@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-
+set -x
 distro_pacman="${distro_pacman:-sudo -E apt-get install -y}"
 
 distro_packages+=(
@@ -26,4 +26,5 @@ $distro_pacman "${distro_packages[@]}"
 
 info "installing Python 3 dependencies..."
 
-sudo pip3 install "${pip_packages[@]}"
+# sudo pip3 install "${pip_packages[@]}"
+set +x
