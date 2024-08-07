@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 distro_pacman="${distro_pacman:-sudo -E apt-get install -y}"
 
 distro_packages+=(
