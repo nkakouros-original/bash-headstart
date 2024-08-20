@@ -95,7 +95,7 @@ function set_plugin_env() {
     export go_plugin_name go_plugin_path
 
     if [[ -f "$_HEADSTART_CONFIG_DIR/$go_plugin_name/$go_plugin_name.conf" ]]; then
-      . "$_HEADSTART_CONFIG_DIR/$go_plugin_name.conf"
+      . "$_HEADSTART_CONFIG_DIR/$go_plugin_name/$go_plugin_name.conf"
     fi
   fi
 }
